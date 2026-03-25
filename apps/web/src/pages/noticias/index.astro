@@ -1,0 +1,261 @@
+---
+import BaseHTML from '../../layouts/BaseHTML.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import { getArticles, getCategoryLabel } from '../../lib/api';
+
+export const prerender = false;
+
+const url = Astro.url;
+const categoria = url.searchParams.get('categoria') || '';
+const search = url.searchParams.get('search') || '';
+const pageStr = url.searchParams.get('page') || '1';
+const page = parseInt(pageStr) || 1;
+
+const result = await getArticles({ page, limit: 12, categoria: categoria || undefined, search: search || undefined });
+const articles = result?.articles ?? [];
+const pagination = result?.pagination;
+
+const pageTitle = search
+  ? `Búsqueda: ${search}`
+  : categoria
+  ? `${getCategoryLabel(categoria)} — Noticias de River Plate`
+  : 'Últimas noticias de River Plate';
+
+const categories = ['', 'actualidad', 'analisis', 'historia', 'mercado', 'inferiores', 'opinion'];
+---
+
+<BaseHTML
+  title={pageTitle}
+  description="Cobertura independiente de River Plate: análisis táctico, mercado de pases, historia del club y actualidad del Millonario."
+>
+  <Header />
+
+  <main id="main-content">
+    <div class="listing-layout">
+      <div class="listing-main">
+
+        <!-- Page header -->
+        <div class="listing-header">
+          <h1 class="listing-title font-display">
+            {search ? `Búsqueda: "${search}"` : categoria ? getCategoryLabel(categoria) : 'Todas las noticias'}
+          </h1>
+          {result?.pagination && (
+            <p class="listing-count">
+              {result.pagination.total} artículo{result.pagination.total !== 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
+
+        <!-- Category filters -->
+        <nav class="category-filters" aria-label="Filtrar por categoría">
+          {categories.map(cat => (
+            <a
+              href={cat ? `/noticias?categoria=${cat}` : '/noticias'}
+              class:list={['cat-filter', { 'cat-filter--active': categoria === cat }]}
+            >
+              {cat ? getCategoryLabel(cat) : 'Todas'}
+            </a>
+          ))}
+        </nav>
+
+        <!-- Search bar -->
+        <form action="/noticias" method="get" class="search-bar" role="search">
+          {categoria && <input type="hidden" name="categoria" value={categoria} />}
+          <input
+            type="search"
+            name="search"
+            value={search}
+            placeholder="Buscar artículos..."
+            class="search-bar__input"
+            aria-label="Buscar artículos"
+          />
+          <button type="submit" class="search-bar__btn">Buscar</button>
+        </form>
+
+        <!-- Articles grid -->
+        {articles.length > 0 ? (
+          <div class="listing-grid" role="feed" aria-label="Lista de artículos">
+            {articles.map(article => (
+              <ArticleCard article={article} variant="default" />
+            ))}
+          </div>
+        ) : (
+          <div class="listing-empty">
+            <div class="empty-icon" aria-hidden="true">🔍</div>
+            <h2 class="font-display">No se encontraron artículos</h2>
+            <p>Intentá con otra búsqueda o explorá todas las categorías.</p>
+            <a href="/noticias" class="empty-cta">Ver todas las noticias →</a>
+          </div>
+        )}
+
+        <!-- Pagination -->
+        {pagination && pagination.pages > 1 && (
+          <nav class="pagination" aria-label="Paginación">
+            {page > 1 && (
+              <a
+                href={`/noticias?${categoria ? `categoria=${categoria}&` : ''}${search ? `search=${encodeURIComponent(search)}&` : ''}page=${page - 1}`}
+                class="page-btn"
+                rel="prev"
+              >
+                ← Anterior
+              </a>
+            )}
+            <span class="page-info">Página {page} de {pagination.pages}</span>
+            {page < pagination.pages && (
+              <a
+                href={`/noticias?${categoria ? `categoria=${categoria}&` : ''}${search ? `search=${encodeURIComponent(search)}&` : ''}page=${page + 1}`}
+                class="page-btn"
+                rel="next"
+              >
+                Siguiente →
+              </a>
+            )}
+          </nav>
+        )}
+      </div>
+
+      <aside class="listing-sidebar">
+        <Sidebar />
+      </aside>
+    </div>
+  </main>
+
+  <Footer />
+</BaseHTML>
+
+<style>
+  .listing-layout {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .listing-sidebar { position: sticky; top: 80px; }
+  .listing-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .listing-title { font-size: 1.75rem; font-weight: 700; color: var(--color-text); }
+  .listing-count { font-size: 0.82rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+
+  /* ── Category filters ────────────────────── */
+  .category-filters {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .cat-filter {
+    padding: 0.35rem 0.85rem;
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    color: var(--color-text-muted);
+    text-decoration: none;
+    transition: all 0.15s;
+    background: white;
+  }
+  .cat-filter:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .cat-filter--active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+  }
+
+  /* ── Search bar ──────────────────────────── */
+  .search-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.75rem;
+  }
+  .search-bar__input {
+    flex: 1;
+    padding: 0.65rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-bar__input:focus { border-color: var(--color-primary); }
+  .search-bar__btn {
+    padding: 0.65rem 1.25rem;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .search-bar__btn:hover { background: var(--color-primary-dark); }
+
+  /* ── Grid ────────────────────────────────── */
+  .listing-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  /* ── Empty ───────────────────────────────── */
+  .listing-empty {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 12px;
+    border: 2px dashed var(--color-border);
+  }
+  .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .listing-empty h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--color-text); }
+  .listing-empty p { font-size: 0.9rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; margin-bottom: 1.25rem; }
+  .empty-cta {
+    color: var(--color-primary);
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+  .empty-cta:hover { text-decoration: underline; }
+
+  /* ── Pagination ──────────────────────────── */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.5rem 0;
+  }
+  .page-btn {
+    padding: 0.5rem 1.25rem;
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    color: var(--color-text);
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .page-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .page-info { font-size: 0.82rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+
+  @media (max-width: 1100px) { .listing-layout { grid-template-columns: 1fr; } .listing-sidebar { position: static; } }
+  @media (max-width: 768px) { .listing-grid { grid-template-columns: 1fr; } .listing-layout { padding: 1.25rem 1rem; } }
+  @media (max-width: 640px) { .listing-grid { grid-template-columns: 1fr; } }
+</style>

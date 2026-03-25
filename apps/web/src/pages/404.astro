@@ -1,0 +1,15 @@
+---
+import BaseHTML from '../layouts/BaseHTML.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+<BaseHTML title="404 — Página no encontrada">
+  <Header />
+  <main style="max-width:640px;margin:6rem auto;padding:2rem;text-align:center;">
+    <div style="font-size:4rem;margin-bottom:1rem;">⚽</div>
+    <h1 class="font-display" style="font-size:2.5rem;font-weight:900;color:var(--color-text);margin-bottom:0.5rem;">Fuera del área</h1>
+    <p style="font-family:'Lora',Georgia,serif;font-size:1.1rem;color:var(--color-text-muted);margin-bottom:2rem;">Esta página no existe o fue movida. Pero el partido sigue.</p>
+    <a href="/" style="background:var(--color-primary);color:white;text-decoration:none;padding:0.85rem 2rem;border-radius:8px;font-family:'Inter',sans-serif;font-weight:600;">Volver al inicio →</a>
+  </main>
+  <Footer />
+</BaseHTML>

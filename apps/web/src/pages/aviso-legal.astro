@@ -1,0 +1,58 @@
+---
+import BaseHTML from '../layouts/BaseHTML.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+const year = new Date().getFullYear();
+---
+<BaseHTML
+  title="Aviso legal — Desde el Tablón"
+  description="Aviso legal de desdeeltablon.com."
+>
+  <Header />
+  <main id="main-content" class="legal-layout">
+    <div class="legal-content">
+      <div class="legal-badge">Legal</div>
+      <h1 class="legal-title font-display">Aviso legal</h1>
+      <p class="legal-updated">Última actualización: enero {year}</p>
+
+      <section class="legal-section">
+        <h2>Identificación del sitio</h2>
+        <p><strong>Nombre del sitio:</strong> Desde el Tablón</p>
+        <p><strong>Dominio:</strong> desdeeltablon.com</p>
+        <p><strong>Actividad:</strong> Medio de comunicación digital especializado en River Plate</p>
+        <p><strong>Contacto:</strong> <a href="mailto:contacto@desdeeltablon.com">contacto@desdeeltablon.com</a></p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Independencia editorial</h2>
+        <p><strong>Desde el Tablón no está afiliado, patrocinado, ni asociado al Club Atlético River Plate (CARP) ni a ninguna de sus entidades relacionadas.</strong> Este sitio es un medio independiente que ejerce el periodismo deportivo con criterio editorial propio. El nombre, las marcas y los contenidos de River Plate son propiedad del club.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Propiedad intelectual</h2>
+        <p>Los textos editoriales publicados en este sitio son propiedad de Desde el Tablón. Las imágenes utilizadas provienen de fuentes con licencias libres (Pexels, Unsplash) o de dominio público, y se citan con su atribución correspondiente. Los escudos de clubes de fútbol son marcas registradas de sus respectivos clubes y se utilizan con fines informativos.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Contenido generado con IA</h2>
+        <p>Parte del contenido editorial de este sitio es generado con asistencia de inteligencia artificial (Anthropic Claude) y verificado por un sistema editorial automatizado. Los datos estadísticos y resultados son verificados contra fuentes primarias antes de su publicación.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Limitación de responsabilidad</h2>
+        <p>Desde el Tablón se esfuerza por mantener la exactitud de la información publicada, pero no garantiza que esté libre de errores. La información del sitio es de carácter periodístico e informativo, y no debe ser tomada como asesoramiento profesional en ningún área.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Publicidad</h2>
+        <p>Este sitio muestra publicidad gestionada por Google AdSense. Los anunciantes no influyen en el contenido editorial del sitio.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Ley aplicable</h2>
+        <p>Este aviso legal se rige por la legislación argentina. Para cualquier controversia relacionada con el uso de este sitio, las partes se someten a los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires.</p>
+      </section>
+    </div>
+  </main>
+  <Footer />
+</BaseHTML>

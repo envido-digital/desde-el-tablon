@@ -1,0 +1,67 @@
+---
+import BaseHTML from '../layouts/BaseHTML.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+<BaseHTML
+  title="Contacto — Desde el Tablón"
+  description="Contactá con el equipo de Desde el Tablón."
+>
+  <Header />
+  <main id="main-content" class="legal-layout">
+    <div class="legal-content">
+      <div class="legal-badge">Contacto</div>
+      <h1 class="legal-title font-display">Contacto</h1>
+
+      <section class="legal-section">
+        <h2>Redacción</h2>
+        <p>Para consultas editoriales, correcciones o propuestas de contenido:</p>
+        <p><a href="mailto:redaccion@desdeeltablon.com" class="contact-link">redaccion@desdeeltablon.com</a></p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Publicidad</h2>
+        <p>Para consultas sobre publicidad directa o sponsors:</p>
+        <p><a href="mailto:publicidad@desdeeltablon.com" class="contact-link">publicidad@desdeeltablon.com</a></p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Privacidad y datos</h2>
+        <p>Para solicitudes relacionadas con datos personales, baja de cuenta o newsletter:</p>
+        <p><a href="mailto:privacidad@desdeeltablon.com" class="contact-link">privacidad@desdeeltablon.com</a></p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Redes sociales</h2>
+        <p>
+          <a href="https://twitter.com/desdeeltablon" target="_blank" rel="noopener noreferrer">Twitter / X → @desdeeltablon</a><br/>
+          <a href="https://instagram.com/desdeeltablon" target="_blank" rel="noopener noreferrer">Instagram → @desdeeltablon</a>
+        </p>
+      </section>
+
+      <p class="legal-note">
+        <strong>Nota:</strong> Desde el Tablón no está afiliado al Club Atlético River Plate. Para contactar al club oficial, visitá <a href="https://www.cariverplate.com.ar" target="_blank" rel="noopener noreferrer">cariverplate.com.ar</a>.
+      </p>
+    </div>
+  </main>
+  <Footer />
+</BaseHTML>
+
+<style>
+  .contact-link {
+    color: var(--color-primary);
+    font-weight: 600;
+    font-size: 1.05rem;
+  }
+  .legal-note {
+    margin-top: 2rem;
+    padding: 1rem 1.25rem;
+    background: var(--color-surface);
+    border-left: 3px solid var(--color-border);
+    border-radius: 0 6px 6px 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    line-height: 1.6;
+  }
+</style>

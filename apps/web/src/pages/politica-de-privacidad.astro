@@ -1,0 +1,60 @@
+---
+import BaseHTML from '../layouts/BaseHTML.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+const year = new Date().getFullYear();
+---
+<BaseHTML
+  title="Política de privacidad — Desde el Tablón"
+  description="Política de privacidad de desdeeltablon.com. Cómo recopilamos y usamos los datos de los usuarios."
+>
+  <Header />
+  <main id="main-content" class="legal-layout">
+    <div class="legal-content">
+      <div class="legal-badge">Legal</div>
+      <h1 class="legal-title font-display">Política de privacidad</h1>
+      <p class="legal-updated">Última actualización: enero {year}</p>
+
+      <section class="legal-section">
+        <h2>1. Responsable del tratamiento</h2>
+        <p><strong>Desde el Tablón</strong> (desdeeltablon.com) es el responsable del tratamiento de los datos personales recopilados a través de este sitio web. Contacto: <a href="mailto:privacidad@desdeeltablon.com">privacidad@desdeeltablon.com</a></p>
+      </section>
+
+      <section class="legal-section">
+        <h2>2. Datos que recopilamos</h2>
+        <p><strong>Cuenta de usuario (opcional):</strong> email, nombre de usuario y contraseña encriptada. Solo si el usuario se registra voluntariamente.</p>
+        <p><strong>Newsletter (opcional):</strong> dirección de email. Solo si el usuario se suscribe voluntariamente.</p>
+        <p><strong>Datos de uso anónimos:</strong> páginas visitadas, tiempo en el sitio, tipo de dispositivo. No vinculados a datos personales identificables.</p>
+        <p><strong>Cookies de publicidad:</strong> Google AdSense puede utilizar cookies para mostrar anuncios personalizados. Ver <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">política de privacidad de Google</a>.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>3. Uso de los datos</h2>
+        <p>Los datos se utilizan exclusivamente para: proveer el servicio de cuenta de usuario, enviar el newsletter si fue solicitado, y mejorar la experiencia del sitio. No vendemos ni compartimos datos personales con terceros, excepto lo necesario para el funcionamiento del servicio (proveedor de hosting, servicio de email transaccional).</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>4. Publicidad (Google AdSense)</h2>
+        <p>Este sitio utiliza Google AdSense para mostrar publicidad. Google puede usar cookies para personalizar los anuncios según el historial de navegación. Podés optar por no recibir anuncios personalizados en <a href="https://adssettings.google.com" target="_blank" rel="noopener noreferrer">Configuración de anuncios de Google</a>.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>5. Cookies</h2>
+        <p>Usamos cookies técnicas necesarias para el funcionamiento del sitio (sesión de usuario) y cookies de terceros para publicidad (Google AdSense). Al continuar usando el sitio, aceptás el uso de cookies técnicas.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>6. Tus derechos</h2>
+        <p>Tenés derecho a acceder, rectificar y eliminar tus datos personales. Para ejercer estos derechos, escribí a <a href="mailto:privacidad@desdeeltablon.com">privacidad@desdeeltablon.com</a> indicando tu solicitud.</p>
+        <p>Para eliminar tu cuenta: podés hacerlo desde la sección "Mi cuenta" o escribiéndonos al email indicado.</p>
+        <p>Para cancelar el newsletter: cada email tiene un link de desuscripción en el pie de página.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>7. Retención de datos</h2>
+        <p>Los datos de cuenta se conservan mientras la cuenta esté activa. Los datos de newsletter se conservan hasta que el usuario se desuscriba. Los datos de uso anónimos se conservan por 12 meses.</p>
+      </section>
+    </div>
+  </main>
+  <Footer />
+</BaseHTML>

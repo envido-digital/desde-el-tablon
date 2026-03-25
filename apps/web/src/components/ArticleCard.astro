@@ -1,0 +1,295 @@
+---
+import { formatDate, getCategoryLabel, getCategoryColor } from '../lib/api';
+import type { Article } from '../lib/api';
+
+interface Props {
+  article: Article;
+  variant?: 'default' | 'hero' | 'compact' | 'horizontal';
+}
+
+const { article, variant = 'default' } = Astro.props;
+const categoryLabel = getCategoryLabel(article.categoria);
+const categoryColor = getCategoryColor(article.categoria);
+const dateStr = formatDate(article.published_at);
+const dateISO = article.published_at ? new Date(article.published_at).toISOString() : '';
+---
+
+{variant === 'hero' && (
+  <article class="card-hero">
+    <a href={`/noticias/${article.slug}`} class="card-hero__link">
+      <div class="card-hero__image">
+        {article.featuredImage ? (
+          <img
+            src={article.featuredImage.url}
+            alt={article.featuredImage.alt}
+            loading="eager"
+            fetchpriority="high"
+          />
+        ) : (
+          <div class="card-hero__placeholder" aria-hidden="true">
+            <span>DT</span>
+          </div>
+        )}
+        <div class="card-hero__overlay" />
+      </div>
+      <div class="card-hero__content">
+        <span class:list={['category-badge', categoryColor]}>{categoryLabel}</span>
+        <h1 class="card-hero__title font-display">{article.titulo}</h1>
+        <p class="card-hero__bajada font-body">{article.bajada}</p>
+        <div class="card-meta">
+          <time class="card-meta__date" datetime={dateISO}>{dateStr}</time>
+          <span class="card-meta__sep">·</span>
+          <span class="card-meta__reading">{article.tiempo_lectura} min de lectura</span>
+        </div>
+      </div>
+    </a>
+  </article>
+)}
+
+{variant === 'default' && (
+  <article class="card-default">
+    <a href={`/noticias/${article.slug}`} class="card-default__link">
+      <div class="card-default__image">
+        {article.featuredImage ? (
+          <img src={article.featuredImage.url} alt={article.featuredImage.alt} loading="lazy" decoding="async" width="400" height="225" style="width:100%;height:100%;object-fit:cover;" />
+        ) : (
+          <div class="card-default__placeholder" aria-hidden="true"><span>DT</span></div>
+        )}
+      </div>
+      <div class="card-default__content">
+        <span class:list={['category-badge', 'category-badge--sm', categoryColor]}>{categoryLabel}</span>
+        <h2 class="card-default__title font-display">{article.titulo}</h2>
+        <p class="card-default__bajada font-body">{article.bajada}</p>
+        <div class="card-meta card-meta--sm">
+          <time datetime={dateISO}>{dateStr}</time>
+          <span>·</span>
+          <span>{article.tiempo_lectura} min</span>
+        </div>
+      </div>
+    </a>
+  </article>
+)}
+
+{variant === 'compact' && (
+  <article class="card-compact">
+    <a href={`/noticias/${article.slug}`} class="card-compact__link">
+      {article.featuredImage && (
+        <img
+          class="card-compact__thumb"
+          src={article.featuredImage.url}
+          alt={article.featuredImage.alt}
+          loading="lazy" decoding="async"
+          width="72"
+          height="72"
+        />
+      )}
+      <div class="card-compact__content">
+        <span class:list={['category-badge', 'category-badge--xs', categoryColor]}>{categoryLabel}</span>
+        <h3 class="card-compact__title font-display">{article.titulo}</h3>
+        <time class="card-compact__date" datetime={dateISO}>{dateStr}</time>
+      </div>
+    </a>
+  </article>
+)}
+
+{variant === 'horizontal' && (
+  <article class="card-horizontal">
+    <a href={`/noticias/${article.slug}`} class="card-horizontal__link">
+      <div class="card-horizontal__content">
+        <span class:list={['category-badge', 'category-badge--sm', categoryColor]}>{categoryLabel}</span>
+        <h3 class="card-horizontal__title font-display">{article.titulo}</h3>
+        <div class="card-meta card-meta--sm">
+          <time datetime={dateISO}>{dateStr}</time>
+          <span>·</span>
+          <span>{article.tiempo_lectura} min</span>
+        </div>
+      </div>
+      {article.featuredImage && (
+        <img
+          class="card-horizontal__image"
+          src={article.featuredImage.url}
+          alt={article.featuredImage.alt}
+          loading="lazy" decoding="async"
+          width="120" height="90"
+        />
+      )}
+    </a>
+  </article>
+)}
+
+<style>
+  /* ── Shared ───────────────────────────────── */
+  .category-badge {
+    display: inline-block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    margin-bottom: 0.5rem;
+  }
+  .category-badge--sm { font-size: 0.65rem; padding: 0.15rem 0.45rem; }
+  .category-badge--xs { font-size: 0.6rem; padding: 0.1rem 0.4rem; }
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    font-family: 'Inter', sans-serif;
+  }
+  .card-meta--sm { font-size: 0.72rem; }
+
+  /* ── Hero card ────────────────────────────── */
+  .card-hero { border-radius: 8px; overflow: hidden; position: relative; }
+  .card-hero__link { display: block; text-decoration: none; }
+  .card-hero__image {
+    position: relative;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    background: #1a1a1a;
+  }
+  .card-hero__image img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.5s ease;
+  }
+  .card-hero:hover .card-hero__image img { transform: scale(1.03); }
+  .card-hero__placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #7f1d1d 0%, #1a1a1a 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card-hero__placeholder span {
+    font-family: 'Playfair Display', serif;
+    font-size: 4rem; font-weight: 900; color: rgba(255,255,255,0.1);
+  }
+  .card-hero__overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.3) 40%, transparent 70%);
+  }
+  .card-hero__content {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 2rem 1.75rem 1.75rem;
+  }
+  .card-hero__title {
+    font-size: clamp(1.4rem, 3.5vw, 2.2rem);
+    font-weight: 700;
+    color: white;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+  }
+  .card-hero__bajada {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.85);
+    line-height: 1.55;
+    margin-bottom: 1rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-hero .card-meta { color: rgba(255,255,255,0.7); }
+
+  /* ── Default card ─────────────────────────── */
+  .card-default {
+    background: white;
+    border-radius: 8px;
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+    transition: box-shadow 0.2s, transform 0.2s;
+  }
+  .card-default:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+  }
+  .card-default__link { display: block; text-decoration: none; }
+  .card-default__image {
+    aspect-ratio: 16/9; overflow: hidden; background: var(--color-surface);
+  }
+  .card-default__image img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  .card-default:hover .card-default__image img { transform: scale(1.04); }
+  .card-default__placeholder {
+    width: 100%; height: 100%;
+    background: linear-gradient(135deg, #fef2f2 0%, var(--color-surface) 100%);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card-default__placeholder span {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem; font-weight: 900; color: var(--color-border);
+  }
+  .card-default__content { padding: 1.1rem 1.2rem 1.2rem; }
+  .card-default__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: color 0.15s;
+  }
+  .card-default:hover .card-default__title { color: var(--color-primary); }
+  .card-default__bajada {
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+    line-height: 1.55;
+    margin-bottom: 0.75rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* ── Compact card ─────────────────────────── */
+  .card-compact { border-bottom: 1px solid var(--color-border); padding: 0.85rem 0; }
+  .card-compact:last-child { border-bottom: none; }
+  .card-compact__link { display: flex; gap: 0.75rem; text-decoration: none; align-items: flex-start; }
+  .card-compact__thumb {
+    width: 72px; height: 72px; object-fit: cover; border-radius: 6px;
+    flex-shrink: 0;
+  }
+  .card-compact__content { flex: 1; min-width: 0; }
+  .card-compact__title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-text);
+    line-height: 1.35;
+    margin-top: 0.2rem;
+    margin-bottom: 0.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    transition: color 0.15s;
+  }
+  .card-compact:hover .card-compact__title { color: var(--color-primary); }
+  .card-compact__date { font-size: 0.7rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+
+  /* ── Horizontal card ──────────────────────── */
+  .card-horizontal { background: white; border-radius: 8px; border: 1px solid var(--color-border); overflow: hidden; }
+  .card-horizontal__link { display: flex; text-decoration: none; align-items: stretch; }
+  .card-horizontal__content { flex: 1; padding: 1rem; }
+  .card-horizontal__title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.3;
+    margin-bottom: 0.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .card-horizontal:hover .card-horizontal__title { color: var(--color-primary); }
+  .card-horizontal__image {
+    width: 120px; height: 100%; object-fit: cover; flex-shrink: 0;
+  }
+</style>

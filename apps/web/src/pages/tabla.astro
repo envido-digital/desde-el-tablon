@@ -1,0 +1,233 @@
+---
+import BaseHTML from '../layouts/BaseHTML.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { getStandings } from '../lib/api';
+import { TeamLogo } from '../components/TeamLogo';
+
+const standings = await getStandings();
+---
+
+<BaseHTML
+  title="Tabla de posiciones — Liga Profesional Argentina"
+  description="Tabla de posiciones actualizada de la Liga Profesional Argentina con River Plate. Posición, puntos, resultados y estadísticas de cada equipo."
+>
+  <Header />
+
+  <main id="main-content">
+    <div class="tabla-layout">
+      <div class="tabla-header">
+        <h1 class="tabla-title font-display">Tabla de posiciones</h1>
+        <p class="tabla-sub">Liga Profesional Argentina · Actualización automática</p>
+      </div>
+
+      {standings && standings.length > 0 ? (
+        <div class="tabla-container">
+          <table class="standings-full" role="table" aria-label="Tabla de posiciones Liga Profesional Argentina">
+            <thead>
+              <tr>
+                <th class="th-pos" scope="col">#</th>
+                <th class="th-team" scope="col">Equipo</th>
+                <th scope="col" title="Partidos Jugados">PJ</th>
+                <th scope="col" title="Ganados">G</th>
+                <th scope="col" title="Empatados">E</th>
+                <th scope="col" title="Perdidos">P</th>
+                <th scope="col" title="Goles a favor">GF</th>
+                <th scope="col" title="Goles en contra">GC</th>
+                <th scope="col" title="Diferencia de goles">Dif</th>
+                <th scope="col" title="Puntos" class="th-pts">Pts</th>
+                <th scope="col" title="Últimos 5 resultados">Forma</th>
+              </tr>
+            </thead>
+            <tbody>
+              {standings.map((row, i) => (
+                <tr class:list={[
+                  'standings-row',
+                  { 'row--river': row.isRiver },
+                  { 'row--top4': !row.isRiver && i < 4 },
+                ]}>
+                  <td class="td-pos">{row.position}</td>
+<td class="td-team">
+  <div class="td-team-inner">
+    <TeamLogo team={row.team} size={22} client:load />
+    <span class:list={['team-name', { 'team-name--river': row.isRiver }]}>
+      {row.team}
+    </span>
+    {row.isRiver && <span class="river-badge" aria-label="River Plate">⚽</span>}
+  </div>
+</td>
+                  <td>{row.played}</td>
+                  <td class="td-g">{row.wins}</td>
+                  <td>{row.draws}</td>
+                  <td>{row.losses}</td>
+                  <td>{row.goalsFor}</td>
+                  <td>{row.goalsAgainst}</td>
+                  <td class:list={['td-diff', { 'diff-pos': row.goalDiff > 0, 'diff-neg': row.goalDiff < 0 }]}>
+                    {row.goalDiff > 0 ? '+' : ''}{row.goalDiff}
+                  </td>
+                  <td class="td-pts">{row.points}</td>
+                  <td class="td-form">
+                    {(row.form || []).map((f: string) => (
+                      <span class:list={['form-dot', `form-${f.toLowerCase()}`]} title={f === 'W' ? 'Victoria' : f === 'D' ? 'Empate' : 'Derrota'}>
+                        {f === 'W' ? 'G' : f === 'D' ? 'E' : 'P'}
+                      </span>
+                    ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <!-- Legend -->
+          <div class="tabla-legend">
+            <div class="legend-item">
+              <span class="legend-dot legend-dot--river"></span>
+              <span>River Plate</span>
+            </div>
+            <div class="legend-sep">·</div>
+            <div class="legend-item form-g-label">G = Victoria</div>
+            <div class="legend-item form-e-label">E = Empate</div>
+            <div class="legend-item form-p-label">P = Derrota</div>
+          </div>
+
+          <p class="tabla-source">
+            Datos actualizados automáticamente. Fuente: <a href="https://www.api-football.com" target="_blank" rel="noopener noreferrer nofollow">API-Football</a>
+          </p>
+        </div>
+      ) : (
+        <div class="tabla-empty">
+          <p>No se pudo cargar la tabla. Intentá más tarde.</p>
+        </div>
+      )}
+    </div>
+  </main>
+
+  <Footer />
+</BaseHTML>
+
+<style>
+  .tabla-layout {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem;
+  }
+  .tabla-header { margin-bottom: 2rem; }
+  .tabla-title { font-size: 2rem; font-weight: 700; color: var(--color-text); margin-bottom: 0.35rem; }
+  .tabla-sub { font-size: 0.85rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+
+  /* ── Table ───────────────────────────────── */
+  .tabla-container {
+    background: white;
+    border-radius: 12px;
+    border: 1px solid var(--color-border);
+    overflow: hidden;
+  }
+  .standings-full {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+  }
+  .standings-full thead {
+    background: var(--color-surface);
+    border-bottom: 2px solid var(--color-border);
+  }
+  .standings-full th {
+    padding: 0.85rem 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .th-team { text-align: left; }
+  .th-pts { color: var(--color-text); }
+
+  .standings-row td { padding: 0.75rem; text-align: center; border-bottom: 1px solid var(--color-border); }
+  .standings-row:last-child td { border-bottom: none; }
+
+  .row--river {
+    background: #fef2f2;
+  }
+  .row--river td { border-bottom-color: #fecaca; }
+  .row--top4 { opacity: 0.8; }
+
+  .td-pos { color: var(--color-text-muted); font-weight: 600; width: 36px; }
+.td-team-inner { display: flex; align-items: center; gap: 0.5rem; }
+.td-team-inner img, .td-team-inner div { 
+  width: 22px !important; 
+  height: 22px !important; 
+  object-fit: contain !important;
+  flex-shrink: 0;
+}
+  .team-name { font-weight: 500; }
+  .team-name--river { color: var(--color-primary); font-weight: 700; }
+  .river-badge { margin-left: 0.4rem; font-size: 0.75rem; }
+  .td-g { font-weight: 600; color: #16a34a; }
+  .td-diff { font-weight: 600; }
+  .diff-pos { color: #16a34a; }
+  .diff-neg { color: #dc2626; }
+  .td-pts { font-weight: 800; font-size: 1rem; color: var(--color-text); }
+
+  /* ── Form dots ───────────────────────────── */
+  .td-form { display: flex; align-items: center; justify-content: center; gap: 2px; padding: 0.75rem 0.5rem; }
+  .form-dot {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+  }
+  .form-w { background: #16a34a; }
+  .form-d { background: #ca8a04; }
+  .form-l { background: #dc2626; }
+
+  /* ── Legend ──────────────────────────────── */
+  .tabla-legend {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: var(--color-surface);
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-family: 'Inter', sans-serif;
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 0.35rem; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 2px; }
+  .legend-dot--river { background: #fef2f2; border: 1px solid #fca5a5; }
+  .legend-sep { color: var(--color-border); }
+  .form-g-label::before { content: '●'; color: #16a34a; margin-right: 0.25rem; }
+  .form-e-label::before { content: '●'; color: #ca8a04; margin-right: 0.25rem; }
+  .form-p-label::before { content: '●'; color: #dc2626; margin-right: 0.25rem; }
+
+  .tabla-source {
+    padding: 0.75rem 1rem;
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    font-family: 'Inter', sans-serif;
+    text-align: right;
+    border-top: 1px solid var(--color-border);
+  }
+  .tabla-source a { color: var(--color-primary); text-decoration: none; }
+  .tabla-empty {
+    text-align: center;
+    padding: 3rem;
+    font-family: 'Inter', sans-serif;
+    color: var(--color-text-muted);
+  }
+
+  @media (max-width: 640px) {
+    .tabla-layout { padding: 1.25rem 0.75rem; }
+    .standings-full th:nth-child(5),
+    .standings-full th:nth-child(6),
+    .standings-full td:nth-child(5),
+    .standings-full td:nth-child(6) { display: none; }
+    .td-form { gap: 1px; }
+    .form-dot { width: 18px; height: 18px; font-size: 0.55rem; }
+  }
+</style>

@@ -1,0 +1,451 @@
+---
+import BaseHTML from '../../layouts/BaseHTML.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import ArticleCard from '../../components/ArticleCard.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import { getPlayer, getCategoryLabel, getCategoryColor, formatDate } from '../../lib/api';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+if (!slug) return Astro.redirect('/');
+
+const player = await getPlayer(slug);
+if (!player) return Astro.redirect('/404');
+
+const canonicalUrl = `https://desdeeltablon.com/jugadores/${slug}`;
+
+const transferBadge: Record<string, { label: string; color: string }> = {
+  confirmed_in:  { label: '✓ Incorporado',        color: '#16A34A' },
+  confirmed_out: { label: '↗ Vendido / salida',    color: '#DC2626' },
+  rumor:         { label: '⋯ Rumor de mercado',    color: '#D97706' },
+};
+
+const statusBadge: Record<string, { label: string; color: string }> = {
+  active:   { label: 'En plantilla',  color: '#16A34A' },
+  sold:     { label: 'Vendido',       color: '#DC2626' },
+  loaned:   { label: 'Cedido',        color: '#D97706' },
+  retired:  { label: 'Retirado',      color: '#6B7280' },
+};
+
+const schema = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: player.name,
+  description: player.bio || undefined,
+  url: canonicalUrl,
+  memberOf: {
+    '@type': 'SportsOrganization',
+    name: 'Club Atlético River Plate',
+    url: 'https://www.cariverplate.com.ar',
+  },
+};
+---
+
+<BaseHTML
+  title={`${player.name} — Perfil · Desde el Tablón`}
+  description={player.bio?.substring(0, 155) || `Perfil completo de ${player.name} en River Plate.`}
+  canonical={canonicalUrl}
+>
+  <script type="application/ld+json" set:html={JSON.stringify(schema)} slot="head" />
+
+  <Header />
+
+  <main id="main-content">
+    <div class="player-layout">
+      <div class="player-main">
+
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb" aria-label="Navegación">
+          <a href="/" class="bc-link">Inicio</a>
+          <span class="bc-sep" aria-hidden="true">›</span>
+          <a href="/jugadores" class="bc-link">Jugadores</a>
+          <span class="bc-sep" aria-hidden="true">›</span>
+          <span class="bc-current">{player.name}</span>
+        </nav>
+
+        <!-- Player header -->
+        <div class="player-header">
+          <div class="player-number" aria-label={`Número ${player.number}`}>
+            {player.number ?? '—'}
+          </div>
+          <div class="player-info">
+            <div class="player-badges">
+              {player.status && statusBadge[player.status] && (
+                <span
+                  class="badge"
+                  style={`background:${statusBadge[player.status].color}18; color:${statusBadge[player.status].color}; border-color:${statusBadge[player.status].color}40`}
+                >
+                  {statusBadge[player.status].label}
+                </span>
+              )}
+              {player.transfer_status && transferBadge[player.transfer_status] && (
+                <span
+                  class="badge badge--transfer"
+                  style={`background:${transferBadge[player.transfer_status].color}18; color:${transferBadge[player.transfer_status].color}; border-color:${transferBadge[player.transfer_status].color}40`}
+                >
+                  {transferBadge[player.transfer_status].label}
+                </span>
+              )}
+              {!player.enriched && (
+                <span class="badge badge--stub">Perfil en construcción</span>
+              )}
+            </div>
+            <h1 class="player-name font-display">{player.name}</h1>
+            <div class="player-meta">
+              {player.position && <span class="meta-item">{player.position}</span>}
+              {player.position && player.nationality && <span class="meta-sep">·</span>}
+              {player.nationality && <span class="meta-item">{player.nationality}</span>}
+              {player.age && <><span class="meta-sep">·</span><span class="meta-item">{player.age} años</span></>}
+            </div>
+            {player.transfer_note && (
+              <p class="transfer-note">{player.transfer_note}</p>
+            )}
+          </div>
+        </div>
+
+        <!-- Bio -->
+        {player.bio && (
+          <section class="player-section" aria-labelledby="bio-title">
+            <h2 class="section-title" id="bio-title">Perfil</h2>
+            <p class="player-bio">{player.bio}</p>
+            {player.comparison && (
+              <div class="comparison-box">
+                <span class="comparison-label">📜 Contexto histórico</span>
+                <p class="comparison-text">{player.comparison}</p>
+              </div>
+            )}
+            {player.hist_link && (
+              <p class="hist-link">
+                Datos completos en <a href={`https://${player.hist_link}`} target="_blank" rel="noopener noreferrer nofollow" class="link">{player.hist_link}</a>
+              </p>
+            )}
+          </section>
+        )}
+
+        <!-- Stats -->
+        {player.stats?.length > 0 && (
+          <section class="player-section" aria-labelledby="stats-title">
+            <h2 class="section-title" id="stats-title">Estadísticas</h2>
+            <div class="stats-table">
+              <div class="stats-header">
+                <span>Temporada actual · Sofascore</span>
+              </div>
+              {player.stats.map(([label, value]: [string, string]) => (
+                <div class="stats-row">
+                  <span class="stats-label">{label}</span>
+                  <span class="stats-value">{value}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        <!-- Titles -->
+        {player.titles?.length > 0 && (
+          <section class="player-section" aria-labelledby="titles-title">
+            <h2 class="section-title" id="titles-title">Títulos con River</h2>
+            <ul class="titles-list" role="list">
+              {player.titles.map((title: string) => (
+                <li class="title-item">
+                  <span class="title-icon" aria-hidden="true">🏆</span>
+                  <span>{title}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <!-- Related articles -->
+        {player.articles?.length > 0 && (
+          <section class="player-section" aria-labelledby="articles-title">
+            <h2 class="section-title" id="articles-title">
+              Notas relacionadas
+              <span class="section-count">{player.articles.length}</span>
+            </h2>
+            <div class="articles-grid" role="feed">
+              {player.articles.map((article: any) => (
+                <ArticleCard article={article} variant="compact" />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <!-- Empty state if no bio yet -->
+        {!player.bio && (
+          <div class="empty-state">
+            <p class="empty-title">Perfil en generación automática</p>
+            <p class="empty-desc">
+              El sistema está construyendo el perfil de {player.name} a partir de las notas donde fue mencionado.
+              Volvé en unas horas para ver el perfil completo.
+            </p>
+          </div>
+        )}
+
+      </div>
+
+      <!-- Sidebar -->
+      <aside class="player-sidebar">
+        <Sidebar />
+      </aside>
+    </div>
+  </main>
+
+  <Footer />
+</BaseHTML>
+
+<style>
+  /* ── Layout ─────────────────────────────────── */
+  .player-layout {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .player-sidebar {
+    position: sticky;
+    top: 80px;
+  }
+
+  /* ── Breadcrumb ─────────────────────────────── */
+  .breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 1.75rem;
+    flex-wrap: wrap;
+  }
+  .bc-link { color: var(--color-text-muted); text-decoration: none; }
+  .bc-link:hover { color: var(--color-primary); }
+  .bc-sep { color: var(--color-border); }
+  .bc-current { color: var(--color-text); font-weight: 500; }
+
+  /* ── Player header ──────────────────────────── */
+  .player-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 2px solid var(--color-border);
+  }
+  .player-number {
+    width: 64px;
+    height: 64px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.75rem;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .player-info { flex: 1; min-width: 0; }
+  .player-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 0.5rem;
+  }
+  .badge {
+    display: inline-block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 0.18rem 0.55rem;
+    border-radius: 3px;
+    border: 1px solid transparent;
+  }
+  .badge--stub {
+    background: var(--color-surface);
+    color: var(--color-text-muted);
+    border-color: var(--color-border);
+  }
+  .player-name {
+    font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1.15;
+    margin-bottom: 0.5rem;
+  }
+  .player-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+  .meta-sep { color: var(--color-border); }
+  .transfer-note {
+    margin-top: 0.6rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    color: var(--color-text-muted);
+    font-style: italic;
+  }
+
+  /* ── Sections ───────────────────────────────── */
+  .player-section { margin-bottom: 2.5rem; }
+  .section-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .section-count {
+    font-size: 0.78rem;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    color: var(--color-text-muted);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 20px;
+    padding: 0.1rem 0.55rem;
+  }
+
+  /* ── Bio ────────────────────────────────────── */
+  .player-bio {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 1.05rem;
+    line-height: 1.85;
+    color: var(--color-text-secondary);
+    margin-bottom: 1.25rem;
+  }
+  .comparison-box {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-left: 3px solid #D97706;
+    border-radius: 0 6px 6px 0;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .comparison-label {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #D97706;
+    margin-bottom: 0.4rem;
+  }
+  .comparison-text {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.92rem;
+    line-height: 1.65;
+    color: var(--color-text-muted);
+    font-style: italic;
+    margin: 0;
+  }
+  .hist-link {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    color: var(--color-text-muted);
+    margin-top: 0.5rem;
+  }
+  .link { color: var(--color-primary); text-decoration: none; }
+  .link:hover { text-decoration: underline; }
+
+  /* ── Stats ──────────────────────────────────── */
+  .stats-table {
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .stats-header {
+    background: var(--color-primary);
+    color: white;
+    padding: 0.6rem 1rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .stats-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-border);
+    font-family: 'Inter', sans-serif;
+  }
+  .stats-row:last-child { border-bottom: none; }
+  .stats-label { font-size: 0.84rem; color: var(--color-text-muted); }
+  .stats-value { font-size: 0.88rem; font-weight: 700; color: var(--color-text); }
+
+  /* ── Titles ─────────────────────────────────── */
+  .titles-list { list-style: none; padding: 0; margin: 0; }
+  .title-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--color-border);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    color: var(--color-text-secondary);
+  }
+  .title-item:last-child { border-bottom: none; }
+  .title-icon { font-size: 0.9rem; }
+
+  /* ── Articles grid ──────────────────────────── */
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+
+  /* ── Empty state ────────────────────────────── */
+  .empty-state {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+  }
+  .empty-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 0.75rem;
+  }
+  .empty-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.88rem;
+    color: var(--color-text-muted);
+    line-height: 1.65;
+    max-width: 440px;
+    margin: 0 auto;
+  }
+
+  /* ── Responsive ─────────────────────────────── */
+  @media (max-width: 1100px) {
+    .player-layout { grid-template-columns: 1fr; }
+    .player-sidebar { position: static; }
+  }
+  @media (max-width: 640px) {
+    .player-layout { padding: 1.25rem 1rem; }
+    .player-header { flex-direction: column; gap: 1rem; }
+    .player-number { width: 52px; height: 52px; font-size: 1.4rem; border-radius: 10px; }
+    .articles-grid { grid-template-columns: 1fr; }
+    .player-name { font-size: 1.5rem; }
+  }
+</style>

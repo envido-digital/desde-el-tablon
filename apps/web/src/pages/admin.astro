@@ -1,0 +1,260 @@
+---
+import BaseHTML from '../layouts/BaseHTML.astro';
+import Header from '../components/Header.astro';
+---
+
+<BaseHTML title="Panel de Administración — Desde el Tablón">
+  <!-- Auth guard: redirect to login if no admin token -->
+  <script>
+    (function() {
+      const token = localStorage.getItem('dt-token');
+      if (!token) { window.location.replace('/mi-cuenta?redirect=/admin'); return; }
+      // Quick check: call a protected endpoint; if 401/403 → redirect
+      const apiBase = (window).__API_BASE__ || 'http://localhost:3001';
+      fetch(apiBase + '/api/articles/admin/stats', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(r => {
+        if (r.status === 401 || r.status === 403) {
+          window.location.replace('/mi-cuenta?redirect=/admin');
+        }
+      }).catch(() => {});
+    })();
+  </script>
+  <Header />
+  <main id="main-content" class="admin-layout">
+    <div class="admin-header">
+      <h1 class="admin-title font-display">Panel de Administración</h1>
+      <div class="admin-actions">
+        <button id="run-pipeline-btn" class="btn-action btn-action--primary">
+          🔄 Ejecutar pipeline
+        </button>
+        <button id="gen-historical-btn" class="btn-action">
+          📜 Generar nota histórica
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats bar -->
+    <div class="stats-bar" id="stats-bar">
+      <div class="stat-card">
+        <div class="stat-number" id="stat-published">—</div>
+        <div class="stat-label">Publicados</div>
+      </div>
+      <div class="stat-card stat-card--warning">
+        <div class="stat-number" id="stat-pending">—</div>
+        <div class="stat-label">En cola</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-today">—</div>
+        <div class="stat-label">Hoy</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-number" id="stat-views">—</div>
+        <div class="stat-label">Vistas totales</div>
+      </div>
+    </div>
+
+    <!-- Review queue -->
+    <section class="admin-section">
+      <h2 class="admin-section-title">Cola de revisión <span id="queue-count" class="queue-badge">0</span></h2>
+      <div id="queue-list" class="queue-list">
+        <p class="queue-empty">Cargando...</p>
+      </div>
+    </section>
+
+    <!-- Pipeline log -->
+    <section class="admin-section">
+      <h2 class="admin-section-title">Log del pipeline</h2>
+      <div id="pipeline-log" class="pipeline-log">
+        <p class="log-line log-line--info">Esperando actividad...</p>
+      </div>
+    </section>
+  </main>
+</BaseHTML>
+
+<script>
+  const API_BASE = 'http://localhost:3001';
+
+  function log(msg: string, type: 'info' | 'success' | 'error' = 'info') {
+    const logEl = document.getElementById('pipeline-log')!;
+    const line = document.createElement('div');
+    line.className = `log-line log-line--${type}`;
+    line.textContent = `[${new Date().toLocaleTimeString('es-AR')}] ${msg}`;
+    logEl.insertBefore(line, logEl.firstChild);
+    if (logEl.children.length > 20) logEl.removeChild(logEl.lastChild!);
+  }
+
+  async function loadStats() {
+    const res = await fetch(`${API_BASE}/api/articles/admin/stats`);
+    if (!res.ok) return;
+    const data = await res.json();
+    document.getElementById('stat-published')!.textContent = data.published.toLocaleString('es-AR');
+    document.getElementById('stat-pending')!.textContent = data.pending.toString();
+    document.getElementById('stat-today')!.textContent = data.todayPublished.toString();
+    document.getElementById('stat-views')!.textContent = data.totalViews.toLocaleString('es-AR');
+  }
+
+  async function loadQueue() {
+    const res = await fetch(`${API_BASE}/api/articles/admin/queue`);
+    if (!res.ok) return;
+    const articles = await res.json();
+
+    document.getElementById('queue-count')!.textContent = articles.length.toString();
+    const queueEl = document.getElementById('queue-list')!;
+
+    if (articles.length === 0) {
+      queueEl.innerHTML = '<p class="queue-empty">✅ No hay artículos pendientes de revisión</p>';
+      return;
+    }
+
+    queueEl.innerHTML = articles.map((a: { id: string; titulo: string; categoria: string; importance_score: number; review_reason: string; bajada: string; created_at: string }) => `
+      <div class="queue-item" id="item-${a.id}">
+        <div class="queue-item-header">
+          <span class="queue-cat">${a.categoria}</span>
+          <span class="queue-score">Score: ${(a.importance_score * 100).toFixed(0)}%</span>
+          ${a.review_reason ? `<span class="queue-reason">⚠️ ${a.review_reason}</span>` : ''}
+        </div>
+        <h3 class="queue-title">${a.titulo}</h3>
+        <p class="queue-bajada">${a.bajada || ''}</p>
+        <div class="queue-item-actions">
+          <button onclick="approveArticle('${a.id}')" class="btn-approve">✓ Aprobar y publicar</button>
+          <button onclick="rejectArticle('${a.id}')" class="btn-reject">✗ Rechazar</button>
+          <a href="/noticias/${a.id}" target="_blank" class="btn-preview">👁 Vista previa</a>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  async function approveArticle(id: string) {
+    const res = await fetch(`${API_BASE}/api/articles/admin/${id}/approve`, { method: 'POST' });
+    if (res.ok) {
+      document.getElementById(`item-${id}`)?.remove();
+      log(`✓ Artículo aprobado: ${id}`, 'success');
+      loadStats();
+    } else {
+      log(`✗ Error al aprobar: ${id}`, 'error');
+    }
+  }
+
+  async function rejectArticle(id: string) {
+    const reason = prompt('Motivo del rechazo (opcional):') || 'Sin motivo indicado';
+    const res = await fetch(`${API_BASE}/api/articles/admin/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    });
+    if (res.ok) {
+      document.getElementById(`item-${id}`)?.remove();
+      log(`✗ Artículo rechazado: ${id}`, 'info');
+      loadStats();
+    }
+  }
+
+  document.getElementById('run-pipeline-btn')?.addEventListener('click', async () => {
+    log('🔄 Iniciando pipeline...', 'info');
+    const btn = document.getElementById('run-pipeline-btn') as HTMLButtonElement;
+    btn.disabled = true;
+    btn.textContent = 'Ejecutando...';
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/pipeline/run`, { method: 'POST' });
+      const data = await res.json();
+      log(`✅ Pipeline completado: ${data.stats.processed} procesados, ${data.stats.published} publicados, ${data.stats.queued} en cola`, 'success');
+      loadStats();
+      loadQueue();
+    } catch {
+      log('✗ Error ejecutando pipeline', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔄 Ejecutar pipeline';
+    }
+  });
+
+  document.getElementById('gen-historical-btn')?.addEventListener('click', async () => {
+    log('📜 Generando nota histórica...', 'info');
+    try {
+      const res = await fetch(`${API_BASE}/api/admin/pipeline/historical`, { method: 'POST' });
+      const data = await res.json();
+      if (data.articleId) {
+        log(`✅ Nota histórica generada: ${data.articleId}`, 'success');
+      } else {
+        log('ℹ️ Ya existe una nota histórica para hoy', 'info');
+      }
+      loadQueue();
+    } catch {
+      log('✗ Error generando nota histórica', 'error');
+    }
+  });
+
+  (window as any).approveArticle = approveArticle;
+  (window as any).rejectArticle = rejectArticle;
+
+  // Init
+  loadStats();
+  loadQueue();
+  setInterval(loadStats, 30000);
+  setInterval(loadQueue, 60000);
+</script>
+
+<style>
+  .admin-layout { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .admin-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.75rem; flex-wrap: wrap; gap: 1rem; }
+  .admin-title { font-size: 1.75rem; font-weight: 700; color: var(--color-text); }
+  .admin-actions { display: flex; gap: 0.75rem; }
+  .btn-action {
+    padding: 0.6rem 1.1rem; border-radius: 8px;
+    font-size: 0.85rem; font-weight: 600; font-family: 'Inter', sans-serif;
+    cursor: pointer; border: 1px solid var(--color-border);
+    background: white; color: var(--color-text); transition: all 0.15s;
+  }
+  .btn-action:hover { border-color: var(--color-primary); color: var(--color-primary); }
+  .btn-action--primary { background: var(--color-primary); color: white; border-color: var(--color-primary); }
+  .btn-action--primary:hover { background: var(--color-primary-dark); color: white; }
+  .btn-action:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* ── Stats bar ───────────────────────────── */
+  .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+  .stat-card { background: white; border: 1px solid var(--color-border); border-radius: 10px; padding: 1.25rem; text-align: center; }
+  .stat-card--warning { border-left: 3px solid #f59e0b; }
+  .stat-number { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--color-text); }
+  .stat-label { font-size: 0.75rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; margin-top: 0.25rem; }
+
+  /* ── Sections ────────────────────────────── */
+  .admin-section { background: white; border: 1px solid var(--color-border); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem; }
+  .admin-section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem; font-weight: 700;
+    color: var(--color-text); margin-bottom: 1.25rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .queue-badge {
+    background: var(--color-primary); color: white;
+    font-size: 0.7rem; font-family: 'Inter', sans-serif; font-weight: 700;
+    padding: 0.1rem 0.5rem; border-radius: 10px;
+  }
+
+  /* ── Queue ───────────────────────────────── */
+  .queue-empty { font-family: 'Inter', sans-serif; color: var(--color-text-muted); font-size: 0.88rem; }
+  .queue-item { border: 1px solid var(--color-border); border-radius: 8px; padding: 1rem; margin-bottom: 0.85rem; }
+  .queue-item:last-child { margin-bottom: 0; }
+  .queue-item-header { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; }
+  .queue-cat { background: var(--color-surface); padding: 0.15rem 0.45rem; border-radius: 3px; font-size: 0.68rem; font-weight: 700; font-family: 'Inter', sans-serif; color: var(--color-text-muted); text-transform: uppercase; }
+  .queue-score { font-size: 0.72rem; font-family: 'Inter', sans-serif; color: var(--color-text-muted); }
+  .queue-reason { font-size: 0.72rem; color: #f59e0b; font-family: 'Inter', sans-serif; }
+  .queue-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; color: var(--color-text); margin-bottom: 0.35rem; }
+  .queue-bajada { font-size: 0.82rem; color: var(--color-text-muted); font-family: 'Source Serif 4', serif; line-height: 1.5; margin-bottom: 0.75rem; }
+  .queue-item-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .btn-approve { padding: 0.4rem 0.85rem; background: #16a34a; color: white; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; }
+  .btn-approve:hover { background: #15803d; }
+  .btn-reject { padding: 0.4rem 0.85rem; background: #dc2626; color: white; border: none; border-radius: 6px; font-size: 0.8rem; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; }
+  .btn-reject:hover { background: #b91c1c; }
+  .btn-preview { padding: 0.4rem 0.85rem; background: white; border: 1px solid var(--color-border); border-radius: 6px; font-size: 0.8rem; color: var(--color-text-muted); text-decoration: none; font-family: 'Inter', sans-serif; }
+
+  /* ── Pipeline log ────────────────────────── */
+  .pipeline-log { font-family: monospace; font-size: 0.8rem; max-height: 300px; overflow-y: auto; }
+  .log-line { padding: 0.35rem 0; border-bottom: 1px solid var(--color-border); }
+  .log-line--info { color: var(--color-text-muted); }
+  .log-line--success { color: #16a34a; }
+  .log-line--error { color: #dc2626; }
+
+  @media (max-width: 640px) { .stats-bar { grid-template-columns: repeat(2, 1fr); } }
+</style>

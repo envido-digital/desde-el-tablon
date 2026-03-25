@@ -1,0 +1,194 @@
+---
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  article?: {
+    publishedAt?: string;
+    section?: string;
+  };
+  canonical?: string;
+}
+
+const {
+  title = 'Desde el Tablón · River con memoria',
+  description = 'El periodismo independiente que el hincha de River merece. Análisis táctico profundo, contexto histórico real y noticias con criterio. No somos el sitio oficial — somos el medio que tiene memoria.',
+  image = 'https://desdeeltablon.com/og-default.jpg',
+  article,
+  canonical,
+} = Astro.props;
+
+const siteUrl = 'https://desdeeltablon.com';
+const canonicalUrl = canonical || new URL(Astro.url.pathname, siteUrl).href;
+const fullTitle = title.includes('Desde el Tablón') ? title : `${title} | Desde el Tablón`;
+---
+<!doctype html>
+<html lang="es-AR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#B91C1C" />
+
+    <!-- Primary Meta -->
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="Redacción Desde el Tablón" />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={image} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:type" content={article ? 'article' : 'website'} />
+    <meta property="og:site_name" content="Desde el Tablón" />
+    <meta property="og:locale" content="es_AR" />
+    {article?.publishedAt && <meta property="article:published_time" content={article.publishedAt} />}
+    {article?.section && <meta property="article:section" content={article.section} />}
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@desdeeltablon" />
+    <meta name="twitter:title" content={fullTitle} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={image} />
+
+    <!-- Fonts: non-blocking load with font-display:swap -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Load only the weights we actually use (fewer variants = faster) -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Lora:ital,wght@0,400;1,400&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=Lora:ital,wght@0,400;1,400&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Global styles -->
+    <style>
+      :root {
+        --color-primary: #B91C1C;
+        --color-primary-dark: #991B1B;
+        --color-accent: #1A1A1A;
+        --color-bg: #FAFAF8;
+        --color-surface: #F4F4F1;
+        --color-border: #E5E5E2;
+        --color-text: #111110;
+        --color-text-muted: #6B6B67;
+        --color-breaking: #DC2626;
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { scroll-behavior: smooth; }
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background-color: var(--color-bg);
+        color: var(--color-text);
+        -webkit-font-smoothing: antialiased;
+      }
+      .font-display { font-family: 'Playfair Display', Georgia, serif; }
+      .font-body   { font-family: 'Lora', Georgia, serif; }
+
+      /* Article body styles */
+      .article-content p {
+        font-family: 'Lora', Georgia, serif;
+        font-size: 1.125rem;
+        line-height: 1.85;
+        margin-bottom: 1.5em;
+        color: var(--color-text);
+      }
+      .article-content strong { font-weight: 700; }
+      .article-content em { font-style: italic; }
+      .article-content blockquote {
+        border-left: 3px solid var(--color-primary);
+        padding: 0.75rem 1.25rem;
+        margin: 2rem 0;
+        background: var(--color-surface);
+        font-family: 'Playfair Display', serif;
+        font-size: 1.2rem;
+        font-style: italic;
+        color: var(--color-accent);
+      }
+
+      /* Legal pages shared styles */
+      .legal-layout { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+      .legal-content {}
+      .legal-badge {
+        display: inline-block; background: #fef2f2; color: var(--color-primary);
+        border: 1px solid #fca5a5; border-radius: 4px; font-size: 0.7rem;
+        font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+        padding: 0.2rem 0.6rem; font-family: 'Inter', sans-serif; margin-bottom: 0.85rem;
+      }
+      .legal-title { font-size: 2rem; font-weight: 700; color: var(--color-text); margin-bottom: 0.5rem; }
+      .legal-updated { font-family: 'Inter', sans-serif; font-size: 0.8rem; color: var(--color-text-muted); margin-bottom: 2rem; }
+      .legal-section { margin-bottom: 2rem; }
+      .legal-section h2 {
+        font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700;
+        color: var(--color-text); margin-bottom: 0.75rem; padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--color-border);
+      }
+      .legal-section p {
+        font-family: 'Lora', Georgia, serif; font-size: 1rem;
+        line-height: 1.75; color: var(--color-text); margin-bottom: 0.85rem;
+      }
+      .legal-section a { color: var(--color-primary); text-decoration: none; }
+      .legal-section a:hover { text-decoration: underline; }
+
+      /* Skip link — visually hidden until focused */
+      .skip-link {
+        position: absolute;
+        top: -100px;
+        left: 1rem;
+        z-index: 9999;
+        background: var(--color-primary);
+        color: white;
+        padding: 0.6rem 1.2rem;
+        border-radius: 0 0 6px 6px;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: top 0.2s;
+      }
+      .skip-link:focus { top: 0; }
+
+      /* Screen reader only utility */
+      .sr-only {
+        position: absolute; width: 1px; height: 1px;
+        padding: 0; margin: -1px; overflow: hidden;
+        clip: rect(0,0,0,0); white-space: nowrap; border-width: 0;
+      }
+
+      /* Scrollbar */
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: var(--color-surface); }
+      ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+    </style>
+
+    <!-- Extra head tags injected by pages (OG, schema, etc.) -->
+    <slot name="head" />
+
+    <!-- Google AdSense — cargado una sola vez en el layout -->
+    <!-- Reemplazar ca-pub-XXXXXXXXXXXXXXXX con el Publisher ID real -->
+    <script
+      async
+      src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <!-- Skip to content — accesibilidad para usuarios de teclado -->
+    <a href="#main-content" class="skip-link">Ir al contenido principal</a>
+    <slot />
+  </body>
+</html>

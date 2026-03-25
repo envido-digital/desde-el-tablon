@@ -1,0 +1,516 @@
+---
+import { getStandings, getNextMatch, getLastResult } from '../lib/api';
+import { TeamLogo } from './TeamLogo';
+
+const standings = await getStandings();
+const nextMatch = await getNextMatch();
+const lastResult = await getLastResult();
+
+const top8 = standings?.slice(0, 8) ?? [];
+
+const TZ = 'America/Argentina/Buenos_Aires';
+
+function fmtDate(d: string) {
+  return new Date(d).toLocaleDateString('es-AR', {
+    weekday: 'short', day: 'numeric', month: 'short', timeZone: TZ
+  });
+}
+function fmtTime(d: string) {
+  return new Date(d).toLocaleTimeString('es-AR', {
+    hour: '2-digit', minute: '2-digit', timeZone: TZ
+  });
+}
+function fmtDateLong(d: string) {
+  return new Date(d).toLocaleDateString('es-AR', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: TZ
+  });
+}
+
+// Determine result label for River
+function riverResult(m: any): 'W' | 'D' | 'L' | null {
+  if (m.homeScore === null || m.awayScore === null) return null;
+  const riverIsHome = m.homeTeam.includes('River');
+  const riverGoals = riverIsHome ? m.homeScore : m.awayScore;
+  const oppGoals = riverIsHome ? m.awayScore : m.homeScore;
+  if (riverGoals > oppGoals) return 'W';
+  if (riverGoals < oppGoals) return 'L';
+  return 'D';
+}
+---
+
+<aside class="sidebar">
+
+  <!-- ── Próximo partido ──────────────────────────────────────────── -->
+  {nextMatch && (
+    <div class="widget widget--match">
+      <h3 class="widget-title">Próximo partido</h3>
+      <div class="match-comp-badge">{nextMatch.competition}</div>
+      <div class="match-teams-row">
+        <div class="match-team-block">
+          <TeamLogo team={nextMatch.homeTeam} size={36} client:load />
+          <span class:list={['team-label', { 'team-label--river': nextMatch.homeTeam.includes('River') }]}>
+            {nextMatch.homeTeam === 'River Plate' ? 'River' : nextMatch.homeTeam.split(' ').slice(0,2).join(' ')}
+          </span>
+        </div>
+        <div class="match-vs-block">
+          <span class="vs-text">VS</span>
+          <div class="match-datetime">
+            <span class="match-day">{fmtDate(nextMatch.date)}</span>
+            <span class="match-time">{fmtTime(nextMatch.date)}</span>
+          </div>
+        </div>
+        <div class="match-team-block match-team-block--right">
+          <TeamLogo team={nextMatch.awayTeam} size={36} client:load />
+          <span class:list={['team-label', { 'team-label--river': nextMatch.awayTeam.includes('River') }]}>
+            {nextMatch.awayTeam === 'River Plate' ? 'River' : nextMatch.awayTeam.split(' ').slice(0,2).join(' ')}
+          </span>
+        </div>
+      </div>
+      {nextMatch.venue && (
+        <div class="match-venue">📍 {nextMatch.venue}</div>
+      )}
+      <div id="countdown" class="match-countdown" data-date={nextMatch.date}></div>
+    </div>
+  )}
+
+  <!-- ── Último resultado ─────────────────────────────────────────── -->
+  {lastResult && (
+    <div class="widget widget--result">
+      <h3 class="widget-title">Último resultado</h3>
+      <div class="match-comp-badge">{lastResult.competition}</div>
+      <div class="result-teams-row">
+        <div class="match-team-block">
+          <TeamLogo team={lastResult.homeTeam} size={32} client:load />
+          <span class:list={['team-label', { 'team-label--river': lastResult.homeTeam.includes('River') }]}>
+            {lastResult.homeTeam === 'River Plate' ? 'River' : lastResult.homeTeam.split(' ').slice(0,2).join(' ')}
+          </span>
+        </div>
+        <div class="result-score-block">
+          {(() => {
+            const r = riverResult(lastResult);
+            return (
+              <div class:list={['result-badge', r === 'W' ? 'result-badge--w' : r === 'L' ? 'result-badge--l' : 'result-badge--d']}>
+                {r === 'W' ? 'Victoria' : r === 'L' ? 'Derrota' : 'Empate'}
+              </div>
+            );
+          })()}
+          <div class="result-scoreline">
+            <span class:list={['score-num', { 'score-num--river': lastResult.homeTeam.includes('River') }]}>{lastResult.homeScore}</span>
+            <span class="score-sep">–</span>
+            <span class:list={['score-num', { 'score-num--river': lastResult.awayTeam.includes('River') }]}>{lastResult.awayScore}</span>
+          </div>
+          <div class="result-date">{fmtDateLong(lastResult.date)}</div>
+        </div>
+        <div class="match-team-block match-team-block--right">
+          <TeamLogo team={lastResult.awayTeam} size={32} client:load />
+          <span class:list={['team-label', { 'team-label--river': lastResult.awayTeam.includes('River') }]}>
+            {lastResult.awayTeam === 'River Plate' ? 'River' : lastResult.awayTeam.split(' ').slice(0,2).join(' ')}
+          </span>
+        </div>
+      </div>
+    </div>
+  )}
+
+  <!-- ── Tabla de posiciones ──────────────────────────────────────── -->
+  {top8.length > 0 && (
+    <div class="widget">
+      <h3 class="widget-title">
+        Tabla de posiciones
+        <a href="/tabla" class="widget-more">Ver completa →</a>
+      </h3>
+      <table class="standings-table" role="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th colspan="2">Equipo</th>
+            <th title="Partidos jugados">PJ</th>
+            <th title="Puntos">Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {top8.map(row => (
+            <tr class:list={[{ 'standings-row--river': row.isRiver }]}>
+              <td class="standings-pos">{row.position}</td>
+              <td class="standings-logo"><TeamLogo team={row.team} size={18} client:load /></td>
+              <td class="standings-team">{row.team.replace('River Plate', 'River').replace(' Rivadavia',' Riv.').replace(' Juniors','').replace(' Central','').replace(' Junín','')}</td>
+              <td>{row.played}</td>
+              <td class="standings-pts">{row.points}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+
+  <!-- ── Newsletter ───────────────────────────────────────────────── -->
+  <div class="widget widget--newsletter">
+    <div class="newsletter-icon" aria-hidden="true">✉</div>
+    <h3 class="newsletter-title font-display">River en tu casilla</h3>
+    <p class="newsletter-desc">Cada viernes: el análisis de la semana, notas top y el dato histórico que no te contó nadie.</p>
+    <form class="newsletter-form" id="newsletter-form" novalidate>
+      <input
+        type="email" name="email" id="newsletter-email"
+        placeholder="tu@email.com" class="newsletter-input"
+        required aria-label="Tu dirección de email" autocomplete="email"
+      />
+      <button type="submit" class="newsletter-btn" id="newsletter-btn">Suscribirme</button>
+    </form>
+    <p class="newsletter-note" id="newsletter-note">Sin spam. Darte de baja es un click.</p>
+  </div>
+
+  <!-- ── Gamification teaser ─────────────────────────────────────── -->
+  <div class="widget widget--game" id="game-teaser">
+    <div class="game-header">
+      <span class="game-icon" aria-hidden="true">🏟️</span>
+      <div>
+        <div class="game-title font-display">Sistema de puntos</div>
+        <div class="game-sub">Ganás puntos leyendo</div>
+      </div>
+    </div>
+    <ul class="game-points" role="list">
+      <li>📰 <strong>+5 pts</strong> por nota leída</li>
+      <li>📊 <strong>+15 pts</strong> por análisis táctico</li>
+      <li>📜 <strong>+10 pts</strong> por nota histórica</li>
+      <li>☀️ <strong>+10 pts</strong> por login diario</li>
+      <li>🔥 <strong>+100 pts</strong> por racha semanal</li>
+    </ul>
+    <a href="/mi-cuenta" class="game-cta">Crear cuenta →</a>
+  </div>
+
+</aside>
+
+<script>
+  // Newsletter form
+  const form = document.getElementById('newsletter-form') as HTMLFormElement | null;
+  const btn  = document.getElementById('newsletter-btn') as HTMLButtonElement | null;
+  const note = document.getElementById('newsletter-note') as HTMLElement | null;
+  const input = document.getElementById('newsletter-email') as HTMLInputElement | null;
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = input?.value.trim();
+    if (!email || !btn) return;
+    btn.disabled = true;
+    btn.textContent = 'Suscribiendo...';
+    try {
+      const apiBase = (window as any).__API_BASE__ || 'http://localhost:3001';
+      const res = await fetch(`${apiBase}/api/newsletter/subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json() as { success: boolean; message?: string; error?: string };
+      if (data.success) {
+        if (form) form.style.display = 'none';
+        if (note) { note.textContent = '¡Listo! Te llega el viernes.'; note.style.color = 'white'; note.style.fontWeight = '600'; }
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Suscribirme';
+        if (note) note.textContent = data.error || 'Algo salió mal.';
+      }
+    } catch {
+      btn.disabled = false;
+      btn.textContent = 'Suscribirme';
+    }
+  });
+
+  // Countdown
+  const el = document.getElementById('countdown');
+  if (el) {
+    const target = new Date(el.dataset.date || '').getTime();
+    function tick() {
+      const diff = target - Date.now();
+      if (diff <= 0) { el!.textContent = '¡En curso!'; return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      el!.textContent = `${d}d ${h}h ${m}m`;
+    }
+    tick();
+    setInterval(tick, 60000);
+  }
+</script>
+
+<style>
+  .sidebar { display: flex; flex-direction: column; gap: 1.5rem; }
+
+  /* ── Widget base ────────────────────────────── */
+  .widget {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    padding: 1.1rem 1.2rem;
+    overflow: hidden;
+  }
+  .widget-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    margin-bottom: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .widget-more {
+    font-size: 0.68rem;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .widget-more:hover { text-decoration: underline; }
+
+  /* ── Match / Result shared ──────────────────── */
+  .match-comp-badge {
+    font-size: 0.65rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    color: white;
+    background: var(--color-primary);
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 3px;
+    margin-bottom: 0.9rem;
+    letter-spacing: 0.04em;
+  }
+  .match-teams-row,
+  .result-teams-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.6rem;
+  }
+  .match-team-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .match-team-block--right { align-items: flex-end; }
+  .team-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+  }
+  .team-label--river { color: var(--color-primary); font-weight: 700; }
+
+  /* ── Próximo partido ────────────────────────── */
+  .match-vs-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    flex-shrink: 0;
+  }
+  .vs-text {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    letter-spacing: 0.08em;
+  }
+  .match-datetime {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.1rem;
+  }
+  .match-day {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+    text-transform: capitalize;
+  }
+  .match-time {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1;
+  }
+  .match-venue {
+    font-size: 0.67rem;
+    color: var(--color-text-muted);
+    font-family: 'Inter', sans-serif;
+    text-align: center;
+    margin-top: 0.25rem;
+  }
+  .match-countdown {
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin-top: 0.6rem;
+    background: #fef2f2;
+    border-radius: 6px;
+    padding: 0.45rem;
+  }
+
+  /* ── Último resultado ───────────────────────── */
+  .result-score-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+  .result-badge {
+    font-size: 0.6rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 10px;
+    letter-spacing: 0.05em;
+  }
+  .result-badge--w { background: #dcfce7; color: #16a34a; }
+  .result-badge--l { background: #fee2e2; color: #dc2626; }
+  .result-badge--d { background: #fef9c3; color: #854d0e; }
+  .result-scoreline {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .score-num {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--color-text);
+    line-height: 1;
+  }
+  .score-num--river { color: var(--color-primary); }
+  .score-sep {
+    font-family: 'Inter', sans-serif;
+    font-size: 1rem;
+    color: var(--color-border);
+    font-weight: 700;
+  }
+  .result-date {
+    font-size: 0.6rem;
+    color: var(--color-text-muted);
+    font-family: 'Inter', sans-serif;
+    text-transform: capitalize;
+    text-align: center;
+  }
+
+  /* ── Standings table ────────────────────────── */
+  .standings-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+  }
+  .standings-table thead th {
+    padding: 0.4rem 0.3rem;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-align: center;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .standings-table thead th:nth-child(3) { text-align: left; }
+  .standings-table td {
+    padding: 0.45rem 0.3rem;
+    text-align: center;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .standings-table tbody tr:last-child td { border-bottom: none; }
+  .standings-row--river { background: #fef2f2; }
+  .standings-pos { color: var(--color-text-muted); font-weight: 600; font-size: 0.72rem; width: 20px; }
+  .standings-logo { width: 22px; padding: 0.35rem 0.1rem; }
+  .standings-team {
+    text-align: left;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+  }
+  .standings-row--river .standings-team { color: var(--color-primary); font-weight: 700; }
+  .standings-pts { font-weight: 800; color: var(--color-text); }
+
+  /* ── Newsletter ─────────────────────────────── */
+  .widget--newsletter {
+    background: linear-gradient(135deg, #7f1d1d 0%, #1a1a1a 100%);
+    color: white;
+    border-color: transparent;
+  }
+  .newsletter-icon { font-size: 1.75rem; margin-bottom: 0.5rem; }
+  .newsletter-title { font-size: 1.05rem; font-weight: 700; color: white; margin-bottom: 0.4rem; }
+  .newsletter-desc { font-size: 0.8rem; color: rgba(255,255,255,0.75); line-height: 1.5; margin-bottom: 1rem; font-family: 'Inter', sans-serif; }
+  .newsletter-form { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .newsletter-input {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 6px;
+    color: white;
+    font-size: 0.85rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    box-sizing: border-box;
+  }
+  .newsletter-input::placeholder { color: rgba(255,255,255,0.5); }
+  .newsletter-input:focus { border-color: rgba(255,255,255,0.5); }
+  .newsletter-btn {
+    width: 100%;
+    padding: 0.65rem;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .newsletter-btn:hover { background: #991b1b; }
+  .newsletter-btn:disabled { opacity: 0.7; cursor: default; }
+  .newsletter-note { font-size: 0.72rem; color: rgba(255,255,255,0.5); font-family: 'Inter', sans-serif; }
+
+  /* ── Gamification ───────────────────────────── */
+  .widget--game { background: var(--color-surface); }
+  .game-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.85rem; }
+  .game-icon { font-size: 1.5rem; }
+  .game-title { font-size: 0.95rem; font-weight: 700; color: var(--color-text); }
+  .game-sub { font-size: 0.72rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+  .game-points {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+  }
+  .game-points strong { color: var(--color-text); }
+  .game-cta {
+    display: block;
+    text-align: center;
+    background: var(--color-primary);
+    color: white;
+    text-decoration: none;
+    padding: 0.65rem;
+    border-radius: 6px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.85rem;
+    transition: background 0.15s;
+  }
+  .game-cta:hover { background: #991b1b; }
+</style>

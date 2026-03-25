@@ -1,0 +1,182 @@
+---
+const year = new Date().getFullYear();
+
+const legalLinks = [
+  { label: 'Acerca de', href: '/acerca-de' },
+  { label: 'Aviso legal', href: '/aviso-legal' },
+  { label: 'Privacidad', href: '/politica-de-privacidad' },
+  { label: 'Contacto', href: '/contacto' },
+];
+
+const sections = [
+  { label: 'Noticias', href: '/noticias' },
+  { label: 'Análisis', href: '/noticias?categoria=analisis' },
+  { label: 'Historia', href: '/noticias?categoria=historia' },
+  { label: 'Mercado', href: '/noticias?categoria=mercado' },
+  { label: 'Inferiores', href: '/noticias?categoria=inferiores' },
+  { label: 'Tabla', href: '/tabla' },
+  { label: 'Partidos', href: '/partidos' },
+];
+---
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <!-- Brand -->
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <div class="footer-logo-mark" aria-hidden="true"><span>DT</span></div>
+        <div>
+          <div class="footer-logo-name">Desde el Tablón</div>
+          <div class="footer-logo-tagline">River con memoria</div>
+        </div>
+      </div>
+      <p class="footer-about">
+        Medio independiente de periodismo deportivo especializado en River Plate. Análisis táctico profundo, noticias con contexto histórico y cobertura seria del club.
+      </p>
+      <div class="footer-social">
+        <a href="https://twitter.com/desdeeltablon" target="_blank" rel="noopener noreferrer" aria-label="Twitter" class="social-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.737-8.835L1.254 2.25H8.08l4.259 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z"/></svg>
+        </a>
+        <a href="https://instagram.com/desdeeltablon" target="_blank" rel="noopener noreferrer" aria-label="Instagram" class="social-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        </a>
+      </div>
+    </div>
+
+    <!-- Sections -->
+    <div class="footer-section">
+      <h4 class="footer-section-title">Secciones</h4>
+      <ul class="footer-links" role="list">
+        {sections.map(s => (
+          <li><a href={s.href} class="footer-link">{s.label}</a></li>
+        ))}
+      </ul>
+    </div>
+
+    <!-- Sources / Credits -->
+    <div class="footer-section">
+      <h4 class="footer-section-title">Fuentes de datos</h4>
+      <ul class="footer-links" role="list">
+        <li><a href="https://lahistoriariver.com" target="_blank" rel="noopener noreferrer" class="footer-link footer-link--ext">lahistoriariver.com ↗</a></li>
+        <li><a href="https://www.cariverplate.com.ar" target="_blank" rel="noopener noreferrer" class="footer-link footer-link--ext">cariverplate.com.ar ↗</a></li>
+        <li><a href="https://www.sofascore.com" target="_blank" rel="noopener noreferrer" class="footer-link footer-link--ext">Sofascore ↗</a></li>
+        <li><a href="https://fbref.com" target="_blank" rel="noopener noreferrer" class="footer-link footer-link--ext">FBref ↗</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Bottom bar -->
+  <div class="footer-bottom">
+    <div class="footer-bottom-inner">
+      <p class="footer-disclaimer">
+        <strong>Desde el Tablón es un sitio de noticias independiente. No está afiliado, patrocinado ni asociado al Club Atlético River Plate.</strong>
+      </p>
+      <div class="footer-legal">
+        {legalLinks.map(link => (
+          <a href={link.href} class="footer-legal-link">{link.label}</a>
+        ))}
+      </div>
+      <p class="footer-copy">© {year} Desde el Tablón · Todos los derechos reservados</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background: #111110;
+    color: rgba(255,255,255,0.75);
+    margin-top: 4rem;
+  }
+  .footer-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 3rem;
+  }
+  /* ── Brand ──────────────────────────────── */
+  .footer-logo {
+    display: flex; align-items: center; gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .footer-logo-mark {
+    width: 40px; height: 40px;
+    background: var(--color-primary);
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .footer-logo-mark span {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900; font-size: 1rem; color: white;
+  }
+  .footer-logo-name {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700; font-size: 1rem; color: white;
+  }
+  .footer-logo-tagline {
+    font-size: 0.65rem; color: rgba(255,255,255,0.4);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+  }
+  .footer-about {
+    font-size: 0.82rem; line-height: 1.65; color: rgba(255,255,255,0.55);
+    font-family: 'Inter', sans-serif; margin-bottom: 1.25rem;
+  }
+  .footer-social { display: flex; gap: 0.5rem; }
+  .social-link {
+    width: 34px; height: 34px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.6); text-decoration: none;
+    transition: all 0.2s;
+  }
+  .social-link:hover { border-color: var(--color-primary); color: white; background: var(--color-primary); }
+
+  /* ── Section ─────────────────────────────── */
+  .footer-section-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 1rem;
+  }
+  .footer-links { list-style: none; display: flex; flex-direction: column; gap: 0.4rem; }
+  .footer-link {
+    font-size: 0.82rem; color: rgba(255,255,255,0.6);
+    text-decoration: none; font-family: 'Inter', sans-serif;
+    transition: color 0.15s;
+  }
+  .footer-link:hover { color: white; }
+  .footer-link--ext { color: rgba(255,255,255,0.45); font-size: 0.78rem; }
+
+  /* ── Bottom bar ──────────────────────────── */
+  .footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    background: rgba(0,0,0,0.3);
+  }
+  .footer-bottom-inner {
+    max-width: 1280px; margin: 0 auto;
+    padding: 1.25rem 1.5rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .footer-disclaimer {
+    font-size: 0.75rem; color: rgba(255,255,255,0.35);
+    font-family: 'Inter', sans-serif; line-height: 1.5;
+  }
+  .footer-disclaimer strong { font-weight: 600; color: rgba(255,255,255,0.5); }
+  .footer-legal { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .footer-legal-link {
+    font-size: 0.72rem; color: rgba(255,255,255,0.4);
+    text-decoration: none; font-family: 'Inter', sans-serif;
+    transition: color 0.15s;
+  }
+  .footer-legal-link:hover { color: rgba(255,255,255,0.75); }
+  .footer-copy { font-size: 0.72rem; color: rgba(255,255,255,0.25); font-family: 'Inter', sans-serif; }
+
+  @media (max-width: 768px) {
+    .footer-inner { grid-template-columns: 1fr; gap: 2rem; padding: 2rem 1rem; }
+    .footer-bottom-inner { padding: 1rem; }
+  }
+</style>

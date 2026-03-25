@@ -1,0 +1,413 @@
+---
+import BaseHTML from '../layouts/BaseHTML.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { TeamLogo } from '../components/TeamLogo';
+import { getAllMatches } from '../lib/api';
+
+export const prerender = false;
+
+const data = await getAllMatches();
+const upcoming = data?.upcoming ?? [];
+const results = data?.results ?? [];
+
+const TZ = 'America/Argentina/Buenos_Aires';
+
+function fmtDate(d: string) {
+  return new Date(d).toLocaleDateString('es-AR', {
+    weekday: 'long', day: 'numeric', month: 'long', timeZone: TZ
+  });
+}
+function fmtTime(d: string) {
+  return new Date(d).toLocaleTimeString('es-AR', {
+    hour: '2-digit', minute: '2-digit', timeZone: TZ
+  });
+}
+function fmtShortDate(d: string) {
+  return new Date(d).toLocaleDateString('es-AR', {
+    day: 'numeric', month: 'short', year: 'numeric', timeZone: TZ
+  });
+}
+
+function riverResult(m: any): 'W' | 'D' | 'L' | null {
+  if (m.homeScore === null || m.awayScore === null) return null;
+  const riverIsHome = m.homeTeam.includes('River');
+  const riverGoals = riverIsHome ? m.homeScore : m.awayScore;
+  const oppGoals = riverIsHome ? m.awayScore : m.homeScore;
+  if (riverGoals > oppGoals) return 'W';
+  if (riverGoals < oppGoals) return 'L';
+  return 'D';
+}
+---
+
+<BaseHTML
+  title="Partidos de River Plate — Fixture y resultados 2026"
+  description="Fixture completo, próximos partidos y resultados de River Plate en Liga Profesional y Copa Libertadores."
+>
+  <Header />
+
+  <main id="main-content" class="partidos-layout">
+    <div class="partidos-header">
+      <h1 class="page-title font-display">Partidos</h1>
+      <p class="page-sub">River Plate · Liga Profesional y Copas 2026</p>
+    </div>
+
+    <div class="partidos-grid">
+
+      <!-- ── PRÓXIMOS PARTIDOS ─────────────────────────────────────── -->
+      <section class="section-card" aria-labelledby="proximos-title">
+        <div class="section-header">
+          <h2 class="section-title" id="proximos-title">
+            <span class="section-dot section-dot--upcoming"></span>
+            Próximos partidos
+          </h2>
+          <span class="section-count">{upcoming.length}</span>
+        </div>
+
+        {upcoming.length === 0 && (
+          <p class="empty-msg">Sin partidos programados próximamente.</p>
+        )}
+
+        {upcoming.map((m, i) => (
+          <div class:list={['match-card', 'match-card--upcoming', { 'match-card--next': i === 0 }]}>
+            {i === 0 && <div class="next-badge">Próximo partido</div>}
+            <div class="match-round">{m.competition}</div>
+            <div class="match-body">
+              <div class="team-block">
+                <TeamLogo team={m.homeTeam} size={40} client:load />
+                <span class:list={['team-name', { 'team-name--river': m.homeTeam.includes('River') }]}>
+                  {m.homeTeam}
+                </span>
+              </div>
+              <div class="center-block">
+                <div class="upcoming-vs">VS</div>
+                <div class="upcoming-date">{fmtDate(m.date)}</div>
+                <div class="upcoming-time">{fmtTime(m.date)} hs</div>
+              </div>
+              <div class="team-block team-block--right">
+                <TeamLogo team={m.awayTeam} size={40} client:load />
+                <span class:list={['team-name', 'team-name--right', { 'team-name--river': m.awayTeam.includes('River') }]}>
+                  {m.awayTeam}
+                </span>
+              </div>
+            </div>
+            {m.venue && (
+              <div class="match-venue">📍 {m.venue}</div>
+            )}
+            {i === 0 && (
+              <div class="countdown-bar" data-date={m.date}></div>
+            )}
+          </div>
+        ))}
+      </section>
+
+      <!-- ── RESULTADOS ─────────────────────────────────────────────── -->
+      <section class="section-card" aria-labelledby="resultados-title">
+        <div class="section-header">
+          <h2 class="section-title" id="resultados-title">
+            <span class="section-dot section-dot--result"></span>
+            Resultados
+          </h2>
+          <span class="section-count">{results.length}</span>
+        </div>
+
+        {results.length === 0 && (
+          <p class="empty-msg">Sin resultados recientes.</p>
+        )}
+
+        {results.map((m) => {
+          const r = riverResult(m);
+          return (
+            <div class="match-card match-card--result">
+              <div class="result-header-row">
+                <span class="match-round">{m.competition}</span>
+                <span class="result-date-small">{fmtShortDate(m.date)}</span>
+              </div>
+              <div class="match-body match-body--result">
+                <div class="team-block">
+                  <TeamLogo team={m.homeTeam} size={32} client:load />
+                  <span class:list={['team-name', { 'team-name--river': m.homeTeam.includes('River') }]}>
+                    {m.homeTeam}
+                  </span>
+                </div>
+                <div class="center-block">
+                  <div class="result-score">
+                    <span class:list={['score-n', { 'score-n--river': m.homeTeam.includes('River') }]}>{m.homeScore}</span>
+                    <span class="score-dash">–</span>
+                    <span class:list={['score-n', { 'score-n--river': m.awayTeam.includes('River') }]}>{m.awayScore}</span>
+                  </div>
+                  {r && (
+                    <div class:list={['result-pill', `result-pill--${r?.toLowerCase()}`]}>
+                      {r === 'W' ? 'Victoria' : r === 'L' ? 'Derrota' : 'Empate'}
+                    </div>
+                  )}
+                </div>
+                <div class="team-block team-block--right">
+                  <TeamLogo team={m.awayTeam} size={32} client:load />
+                  <span class:list={['team-name', 'team-name--right', { 'team-name--river': m.awayTeam.includes('River') }]}>
+                    {m.awayTeam}
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </section>
+
+    </div>
+  </main>
+
+  <Footer />
+</BaseHTML>
+
+<script>
+  // Countdown for next match
+  document.querySelectorAll('.countdown-bar').forEach(el => {
+    const target = new Date((el as HTMLElement).dataset.date || '').getTime();
+    function tick() {
+      const diff = target - Date.now();
+      if (diff <= 0) { el.textContent = '¡El partido está en curso!'; return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      el.textContent = `Faltan ${d}d ${h}h ${m}m`;
+    }
+    tick();
+    setInterval(tick, 60000);
+  });
+</script>
+
+<style>
+  .partidos-layout {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+  }
+  .partidos-header { margin-bottom: 2rem; }
+  .page-title { font-size: clamp(1.8rem, 3vw, 2.4rem); font-weight: 700; color: var(--color-text); margin-bottom: 0.3rem; }
+  .page-sub { font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--color-text-muted); }
+
+  .partidos-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+
+  /* ── Section card ───────────────────────────── */
+  .section-card {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.2rem 0.75rem;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+  }
+  .section-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+  }
+  .section-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .section-dot--upcoming { background: #3b82f6; }
+  .section-dot--result { background: var(--color-primary); }
+  .section-count {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    background: var(--color-border);
+    padding: 0.1rem 0.55rem;
+    border-radius: 20px;
+  }
+  .empty-msg {
+    padding: 2rem;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    color: var(--color-text-muted);
+  }
+
+  /* ── Match card ────────────────────────────── */
+  .match-card {
+    padding: 1rem 1.2rem;
+    border-bottom: 1px solid var(--color-border);
+    position: relative;
+  }
+  .match-card:last-child { border-bottom: none; }
+  .match-card--next { background: #fafeff; border-left: 3px solid #3b82f6; }
+
+  .next-badge {
+    display: inline-block;
+    background: #3b82f6;
+    color: white;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.55rem;
+    border-radius: 3px;
+    margin-bottom: 0.6rem;
+  }
+  .match-round {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.75rem;
+  }
+  .result-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+  }
+  .result-date-small {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+    text-transform: capitalize;
+  }
+
+  /* ── Match body ────────────────────────────── */
+  .match-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .team-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .team-block--right { align-items: flex-end; }
+  .team-name {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--color-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 110px;
+  }
+  .team-name--right { text-align: right; }
+  .team-name--river { color: var(--color-primary); font-weight: 700; }
+
+  /* ── Center block ───────────────────────────── */
+  .center-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 0.2rem;
+    min-width: 80px;
+  }
+  .upcoming-vs {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--color-text-muted);
+    letter-spacing: 0.1em;
+  }
+  .upcoming-date {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+    text-align: center;
+    text-transform: capitalize;
+    line-height: 1.3;
+  }
+  .upcoming-time {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--color-text);
+    line-height: 1;
+  }
+  .match-venue {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.68rem;
+    color: var(--color-text-muted);
+    margin-top: 0.6rem;
+    text-align: center;
+  }
+  .countdown-bar {
+    margin-top: 0.75rem;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #3b82f6;
+    background: #eff6ff;
+    border-radius: 6px;
+    padding: 0.45rem;
+  }
+
+  /* ── Result score ───────────────────────────── */
+  .result-score {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  .score-n {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: var(--color-text);
+    line-height: 1;
+  }
+  .score-n--river { color: var(--color-primary); }
+  .score-dash {
+    font-size: 1.1rem;
+    color: var(--color-border);
+    font-weight: 700;
+    font-family: 'Inter', sans-serif;
+  }
+  .result-pill {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 0.15rem 0.55rem;
+    border-radius: 10px;
+    letter-spacing: 0.04em;
+  }
+  .result-pill--w { background: #dcfce7; color: #16a34a; }
+  .result-pill--l { background: #fee2e2; color: #dc2626; }
+  .result-pill--d { background: #fef9c3; color: #854d0e; }
+
+  @media (max-width: 900px) {
+    .partidos-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .partidos-layout { padding: 1.25rem 1rem; }
+    .team-name { font-size: 0.75rem; max-width: 80px; }
+    .score-n { font-size: 1.3rem; }
+    .upcoming-time { font-size: 1.1rem; }
+  }
+</style>

@@ -1,0 +1,92 @@
+---
+import BaseHTML from '../layouts/BaseHTML.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseHTML
+  title="Acerca de Desde el Tablón"
+  description="Desde el Tablón es un medio de noticias independiente especializado en River Plate. No afiliado al Club Atlético River Plate."
+>
+  <Header />
+  <main id="main-content" class="legal-layout">
+    <div class="legal-content">
+      <div class="legal-badge">Sitio independiente</div>
+      <h1 class="legal-title font-display">Acerca de Desde el Tablón</h1>
+
+      <section class="legal-section">
+        <h2>¿Qué es Desde el Tablón?</h2>
+        <p><strong>Desde el Tablón</strong> (<em>desdeeltablon.com</em>) es un medio de comunicación digital independiente dedicado a la cobertura periodística del Club Atlético River Plate. Nuestro objetivo es producir periodismo deportivo de calidad: análisis táctico profundo, noticias con contexto histórico y cobertura seria del club.</p>
+        <p>El nombre del sitio hace referencia al "tablón", la popular denominación de las tribunas altas del estadio, donde históricamente se ubica la hinchada más apasionada del club.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Independencia editorial</h2>
+        <p><strong>Desde el Tablón no está afiliado, patrocinado, ni tiene ningún tipo de asociación con el Club Atlético River Plate (CARP).</strong> No somos el sitio oficial del club ni representamos sus posiciones institucionales.</p>
+        <p>Somos un medio independiente que ejerce el periodismo con criterio propio. Esto implica que podemos y debemos ser críticos cuando el equipo o la dirigencia lo merece.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Nuestro diferencial editorial</h2>
+        <p>Nuestra propuesta de valor es el <strong>contexto histórico</strong>. Cada noticia del presente se conecta con los 125 años de historia del club. Para esto, trabajamos con <a href="https://lahistoriariver.com" target="_blank" rel="noopener noreferrer">lahistoriariver.com</a>, el archivo histórico más completo sobre River Plate, como fuente de referencia para datos históricos.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Tecnología y automatización</h2>
+        <p>Desde el Tablón utiliza inteligencia artificial (Claude de Anthropic) para asistir en la redacción de notas a partir de hechos verificados. Todo el contenido generado automáticamente pasa por revisión editorial antes de su publicación. Los hechos reportados siempre se verifican con múltiples fuentes.</p>
+        <p>El código fuente del proyecto es un desarrollo propio.</p>
+      </section>
+
+      <section class="legal-section">
+        <h2>Equipo editorial</h2>
+        <p>Proyecto en construcción. El equipo editorial se presentará en detalle en el momento del lanzamiento oficial.</p>
+        <p>Contacto: <a href="mailto:redaccion@desdeeltablon.com">redaccion@desdeeltablon.com</a></p>
+      </section>
+
+      <div class="disclaimer-box">
+        <strong>⚠️ Aviso importante:</strong> Desde el Tablón es un sitio de noticias independiente. No está afiliado, patrocinado ni asociado al Club Atlético River Plate. El nombre y los colores del club se utilizan exclusivamente con fines informativos y periodísticos.
+      </div>
+    </div>
+  </main>
+  <Footer />
+</BaseHTML>
+
+<style>
+  .legal-layout { max-width: 760px; margin: 0 auto; padding: 2.5rem 1.5rem; }
+  .legal-badge {
+    display: inline-block;
+    background: #fef2f2; color: var(--color-primary);
+    border: 1px solid #fca5a5; border-radius: 4px;
+    font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; padding: 0.2rem 0.6rem;
+    font-family: 'Inter', sans-serif; margin-bottom: 0.85rem;
+  }
+  .legal-title { font-size: 2rem; font-weight: 700; color: var(--color-text); margin-bottom: 2rem; }
+  .legal-section { margin-bottom: 2rem; }
+  .legal-section h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem; font-weight: 700;
+    color: var(--color-text); margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .legal-section p {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 1rem; line-height: 1.75;
+    color: var(--color-text); margin-bottom: 0.85rem;
+  }
+  .legal-section a { color: var(--color-primary); text-decoration: none; }
+  .legal-section a:hover { text-decoration: underline; }
+  .disclaimer-box {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    border-left: 4px solid var(--color-primary);
+    border-radius: 6px;
+    padding: 1rem 1.25rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: #7f1d1d;
+    margin-top: 2rem;
+  }
+</style>

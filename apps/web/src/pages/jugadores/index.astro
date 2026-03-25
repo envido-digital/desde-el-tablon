@@ -1,0 +1,237 @@
+---
+import BaseHTML from '../../layouts/BaseHTML.astro';
+import Header from '../../components/Header.astro';
+import Footer from '../../components/Footer.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import { getAllPlayers } from '../../lib/api';
+
+export const prerender = false;
+
+const players = await getAllPlayers() ?? [];
+
+// Group by status
+const active  = players.filter((p: any) => p.status === 'active');
+const others  = players.filter((p: any) => p.status !== 'active');
+
+const posOrder = ['Arquero','Defensor','Lateral','Volante','Mediocampista','Enganche','Extremo','Delantero'];
+
+function posGroup(pos: string | null): string {
+  if (!pos) return 'Sin posición';
+  for (const p of posOrder) if (pos.toLowerCase().includes(p.toLowerCase())) return p;
+  return pos.split('/')[0].trim();
+}
+
+// Group active players by position
+const byPos: Record<string, any[]> = {};
+for (const p of active) {
+  const g = posGroup(p.position);
+  (byPos[g] = byPos[g] || []).push(p);
+}
+---
+
+<BaseHTML
+  title="Jugadores de River Plate — Perfiles y estadísticas · Desde el Tablón"
+  description="Perfiles completos de los jugadores de River Plate con estadísticas, títulos y contexto histórico."
+>
+  <Header />
+
+  <main id="main-content">
+    <div class="players-layout">
+      <div class="players-main">
+
+        <div class="page-header">
+          <h1 class="page-title font-display">Jugadores</h1>
+          <p class="page-desc">
+            {active.length} perfil{active.length !== 1 ? 'es' : ''} activo{active.length !== 1 ? 's' : ''} ·
+            generados automáticamente desde las notas del sitio
+          </p>
+        </div>
+
+        {active.length === 0 && (
+          <div class="empty-state">
+            <p>Los perfiles se generan automáticamente cuando el pipeline publica notas que mencionan jugadores. Volvé en unas horas.</p>
+          </div>
+        )}
+
+        {Object.entries(byPos).map(([pos, group]) => (
+          <section class="pos-group" aria-labelledby={`pos-${pos}`}>
+            <h2 class="pos-title" id={`pos-${pos}`}>{pos}</h2>
+            <div class="players-grid">
+              {(group as any[]).map((p: any) => (
+                <a href={`/jugadores/${p.slug}`} class="player-card">
+                  <div class="card-number">{p.number ?? '—'}</div>
+                  <div class="card-body">
+                    <div class="card-name">{p.name}</div>
+                    <div class="card-meta">
+                      {p.position && <span>{p.position}</span>}
+                      {p.nationality && <><span class="sep">·</span><span>{p.nationality}</span></>}
+                    </div>
+                    {p.transfer_status === 'confirmed_out' && (
+                      <span class="card-badge card-badge--out">Salida</span>
+                    )}
+                    {p.transfer_status === 'confirmed_in' && (
+                      <span class="card-badge card-badge--in">Nuevo</span>
+                    )}
+                    {p.transfer_status === 'rumor' && (
+                      <span class="card-badge card-badge--rumor">Rumor</span>
+                    )}
+                  </div>
+                  <span class="card-arrow" aria-hidden="true">→</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        ))}
+
+        {others.length > 0 && (
+          <section class="pos-group" aria-labelledby="pos-others">
+            <h2 class="pos-title" id="pos-others">Ex-jugadores / transferencias</h2>
+            <div class="players-grid">
+              {others.map((p: any) => (
+                <a href={`/jugadores/${p.slug}`} class="player-card player-card--inactive">
+                  <div class="card-number">{p.number ?? '—'}</div>
+                  <div class="card-body">
+                    <div class="card-name">{p.name}</div>
+                    <div class="card-meta">{p.position}</div>
+                    <span class={`card-badge card-badge--${p.status}`}>
+                      {p.status === 'sold' ? 'Vendido' : p.status === 'loaned' ? 'Cedido' : p.status}
+                    </span>
+                  </div>
+                  <span class="card-arrow" aria-hidden="true">→</span>
+                </a>
+              ))}
+            </div>
+          </section>
+        )}
+
+      </div>
+
+      <aside class="players-sidebar">
+        <Sidebar />
+      </aside>
+    </div>
+  </main>
+
+  <Footer />
+</BaseHTML>
+
+<style>
+  .players-layout {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .players-sidebar { position: sticky; top: 80px; }
+  .page-header { margin-bottom: 2rem; }
+  .page-title { font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 700; color: var(--color-text); margin-bottom: 0.4rem; }
+  .page-desc { font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--color-text-muted); }
+
+  .pos-group { margin-bottom: 2.5rem; }
+  .pos-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.6rem;
+  }
+
+  .player-card {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.85rem 1rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.15s;
+  }
+  .player-card:hover {
+    border-color: var(--color-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+  .player-card--inactive { opacity: 0.65; }
+
+  .card-number {
+    width: 38px;
+    height: 38px;
+    background: var(--color-primary);
+    color: white;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1rem;
+    font-weight: 900;
+    flex-shrink: 0;
+  }
+  .card-body { flex: 1; min-width: 0; }
+  .card-name {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--color-text);
+    margin-bottom: 0.2rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .card-meta {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
+    color: var(--color-text-muted);
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .sep { color: var(--color-border); }
+  .card-badge {
+    display: inline-block;
+    margin-top: 0.3rem;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.12rem 0.45rem;
+    border-radius: 3px;
+  }
+  .card-badge--in       { background: #16A34A18; color: #16A34A; }
+  .card-badge--out      { background: #DC262618; color: #DC2626; }
+  .card-badge--rumor    { background: #D9780618; color: #D97806; }
+  .card-badge--sold     { background: #DC262618; color: #DC2626; }
+  .card-badge--loaned   { background: #D9780618; color: #D97806; }
+  .card-arrow { font-size: 0.75rem; color: var(--color-border); flex-shrink: 0; }
+  .player-card:hover .card-arrow { color: var(--color-primary); }
+
+  .empty-state {
+    padding: 2.5rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    line-height: 1.65;
+  }
+
+  @media (max-width: 1100px) { .players-layout { grid-template-columns: 1fr; } .players-sidebar { position: static; } }
+  @media (max-width: 640px) { .players-layout { padding: 1.25rem 1rem; } .players-grid { grid-template-columns: 1fr; } }
+</style>

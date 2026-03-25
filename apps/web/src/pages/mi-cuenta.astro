@@ -1,0 +1,421 @@
+---
+import BaseHTML from '../layouts/BaseHTML.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<BaseHTML
+  title="Mi cuenta — Desde el Tablón"
+  description="Tu perfil de lector en Desde el Tablón. Puntos, nivel, badges y ranking."
+>
+  <Header />
+
+  <main id="main-content" class="account-layout">
+    <!-- Auth forms (shown when not logged in) -->
+    <div id="auth-section" class="auth-section" style="display:none">
+      <div class="auth-card">
+        <div class="auth-logo font-display">DT</div>
+        <h1 class="auth-title font-display">Desde el Tablón</h1>
+        <p class="auth-subtitle">Creá tu cuenta y ganá puntos leyendo</p>
+
+        <!-- Login form -->
+        <div id="login-form">
+          <h2 class="form-title">Iniciar sesión</h2>
+          <div class="form-group">
+            <label for="login-email">Email</label>
+            <input type="email" id="login-email" placeholder="tu@email.com" />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Contraseña</label>
+            <input type="password" id="login-password" placeholder="••••••••" />
+          </div>
+          <button id="login-btn" class="btn-primary" type="button">Ingresar</button>
+          <p class="form-switch">¿No tenés cuenta? <button class="link-btn" onclick="switchToRegister()">Registrate</button></p>
+        </div>
+
+        <!-- Register form -->
+        <div id="register-form" style="display:none">
+          <h2 class="form-title">Crear cuenta</h2>
+          <div class="form-group">
+            <label for="reg-username">Username</label>
+            <input type="text" id="reg-username" placeholder="millonario123" />
+          </div>
+          <div class="form-group">
+            <label for="reg-email">Email</label>
+            <input type="email" id="reg-email" placeholder="tu@email.com" />
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Contraseña</label>
+            <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres" />
+          </div>
+          <button id="register-btn" class="btn-primary" type="button">Crear cuenta — +50 pts 🎉</button>
+          <p class="form-switch">¿Ya tenés cuenta? <button class="link-btn" onclick="switchToLogin()">Iniciá sesión</button></p>
+        </div>
+
+        <div id="auth-error" class="auth-error" style="display:none"></div>
+      </div>
+    </div>
+
+    <!-- Profile (shown when logged in) -->
+    <div id="profile-section" style="display:none">
+      <div class="profile-header">
+        <div class="profile-avatar" id="profile-avatar-display">
+          <span id="avatar-initial">?</span>
+        </div>
+        <div class="profile-info">
+          <h1 class="profile-name font-display" id="profile-username-display">Cargando...</h1>
+          <div class="profile-level" id="profile-level-display"></div>
+        </div>
+        <button onclick="logout()" class="btn-logout">Cerrar sesión</button>
+      </div>
+
+      <!-- Points progress -->
+      <div class="points-card">
+        <div class="points-main">
+          <div class="points-total">
+            <span class="points-number" id="points-number">0</span>
+            <span class="points-label">puntos totales</span>
+          </div>
+          <div class="points-today">
+            <span class="today-label">Hoy</span>
+            <span class="today-value" id="today-points">0 pts</span>
+          </div>
+        </div>
+        <div class="progress-section">
+          <div class="progress-label">
+            <span id="current-level-name">Tablonero</span>
+            <span id="progress-text">0 / 100 pts para subir</span>
+          </div>
+          <div class="progress-bar" role="progressbar" id="progress-bar-wrapper">
+            <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+          </div>
+          <div class="progress-next">
+            <span>Próximo nivel: <strong id="next-level-name">Popular ⚽</strong></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Badges -->
+      <section class="badges-section">
+        <h2 class="section-heading font-display">Mis badges</h2>
+        <div class="badges-grid" id="badges-grid">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- Leaderboard -->
+      <section class="leaderboard-section">
+        <h2 class="section-heading font-display">Ranking global</h2>
+        <div class="leaderboard" id="leaderboard">
+          <!-- Populated by JS -->
+        </div>
+      </section>
+
+      <!-- How to earn points -->
+      <section class="earn-section">
+        <h2 class="section-heading font-display">Cómo ganar puntos</h2>
+        <div class="earn-grid">
+          <div class="earn-card">
+            <div class="earn-icon" aria-hidden="true">📰</div>
+            <div class="earn-pts">+5 pts</div>
+            <div class="earn-desc">Leer un artículo (60%+)</div>
+            <div class="earn-limit">Máx. 20/día</div>
+          </div>
+          <div class="earn-card">
+            <div class="earn-icon" aria-hidden="true">📊</div>
+            <div class="earn-pts">+15 pts</div>
+            <div class="earn-desc">Leer análisis táctico</div>
+            <div class="earn-limit">Sin límite</div>
+          </div>
+          <div class="earn-card">
+            <div class="earn-icon" aria-hidden="true">📜</div>
+            <div class="earn-pts">+10 pts</div>
+            <div class="earn-desc">Leer nota histórica</div>
+            <div class="earn-limit">Sin límite</div>
+          </div>
+          <div class="earn-card">
+            <div class="earn-icon" aria-hidden="true">☀️</div>
+            <div class="earn-pts">+10 pts</div>
+            <div class="earn-desc">Login diario</div>
+            <div class="earn-limit">1/día</div>
+          </div>
+          <div class="earn-card earn-card--special">
+            <div class="earn-icon" aria-hidden="true">🔥</div>
+            <div class="earn-pts">+100 pts</div>
+            <div class="earn-desc">Racha de 7 días</div>
+            <div class="earn-limit">1/semana</div>
+          </div>
+          <div class="earn-card earn-card--special">
+            <div class="earn-icon" aria-hidden="true">🎉</div>
+            <div class="earn-pts">+50 pts</div>
+            <div class="earn-desc">Registro inicial</div>
+            <div class="earn-limit">1 sola vez</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <Footer />
+</BaseHTML>
+
+<script>
+  const API_BASE = 'http://localhost:3001';
+
+  function getToken(): string | null { return localStorage.getItem('dt-token'); }
+  function setToken(t: string) { localStorage.setItem('dt-token', t); }
+  function clearToken() { localStorage.removeItem('dt-token'); }
+
+  function switchToRegister() {
+    (document.getElementById('login-form') as HTMLElement).style.display = 'none';
+    (document.getElementById('register-form') as HTMLElement).style.display = 'block';
+  }
+  function switchToLogin() {
+    (document.getElementById('register-form') as HTMLElement).style.display = 'none';
+    (document.getElementById('login-form') as HTMLElement).style.display = 'block';
+  }
+
+  function showError(msg: string) {
+    const el = document.getElementById('auth-error')!;
+    el.textContent = msg;
+    el.style.display = 'block';
+    setTimeout(() => { el.style.display = 'none'; }, 5000);
+  }
+
+  async function login() {
+    const email = (document.getElementById('login-email') as HTMLInputElement).value;
+    const password = (document.getElementById('login-password') as HTMLInputElement).value;
+    if (!email || !password) return showError('Completá todos los campos');
+
+    const res = await fetch(`${API_BASE}/api/users/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) return showError(data.error || 'Error al iniciar sesión');
+
+    setToken(data.token);
+    loadProfile(data.user);
+    if (data.dailyBonus) alert(data.dailyBonus.message);
+  }
+
+  async function register() {
+    const username = (document.getElementById('reg-username') as HTMLInputElement).value;
+    const email = (document.getElementById('reg-email') as HTMLInputElement).value;
+    const password = (document.getElementById('reg-password') as HTMLInputElement).value;
+    if (!username || !email || !password) return showError('Completá todos los campos');
+
+    const res = await fetch(`${API_BASE}/api/users/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) return showError(data.error || 'Error al registrarse');
+
+    setToken(data.token);
+    loadProfile(data.user);
+    alert(`¡Bienvenido al tablón! ${data.message}`);
+  }
+
+  function logout() {
+    clearToken();
+    location.reload();
+  }
+
+  function loadProfile(user: {
+    username: string;
+    total_points: number;
+    currentLevel: { name: string; badge: string; level: number };
+    nextLevel: { name: string; badge: string; minPoints: number } | null;
+    progressToNextLevel: number;
+    todayPoints: number;
+    badges: Array<{ name: string; icon: string; description: string }>;
+  }) {
+    (document.getElementById('auth-section') as HTMLElement).style.display = 'none';
+    (document.getElementById('profile-section') as HTMLElement).style.display = 'block';
+
+    (document.getElementById('avatar-initial') as HTMLElement).textContent = user.username[0].toUpperCase();
+    (document.getElementById('profile-username-display') as HTMLElement).textContent = user.username;
+    (document.getElementById('profile-level-display') as HTMLElement).innerHTML =
+      `<span>${user.currentLevel.badge} Nivel ${user.currentLevel.level} — ${user.currentLevel.name}</span>`;
+
+    (document.getElementById('points-number') as HTMLElement).textContent = user.total_points.toLocaleString('es-AR');
+    (document.getElementById('today-points') as HTMLElement).textContent = `${user.todayPoints} pts`;
+    (document.getElementById('current-level-name') as HTMLElement).textContent = `${user.currentLevel.badge} ${user.currentLevel.name}`;
+    (document.getElementById('progress-fill') as HTMLElement).style.width = `${user.progressToNextLevel}%`;
+
+    if (user.nextLevel) {
+      (document.getElementById('progress-text') as HTMLElement).textContent =
+        `${user.total_points.toLocaleString('es-AR')} / ${user.nextLevel.minPoints.toLocaleString('es-AR')} pts para subir`;
+      (document.getElementById('next-level-name') as HTMLElement).textContent =
+        `${user.nextLevel.name} ${user.nextLevel.badge}`;
+    } else {
+      (document.getElementById('progress-text') as HTMLElement).textContent = '¡Nivel máximo alcanzado!';
+      (document.getElementById('next-level-name') as HTMLElement).textContent = 'Leyenda del Millo 👑';
+    }
+
+    // Render badges
+    const badgesGrid = document.getElementById('badges-grid')!;
+    if (user.badges.length === 0) {
+      badgesGrid.innerHTML = '<p style="color: var(--color-text-muted); font-family: Inter, sans-serif; font-size: 0.85rem;">Todavía no tenés badges. ¡Seguí leyendo!</p>';
+    } else {
+      badgesGrid.innerHTML = user.badges.map((b: { icon: string; name: string; description: string }) => `
+        <div class="badge-item">
+          <div class="badge-icon">${b.icon}</div>
+          <div class="badge-name">${b.name}</div>
+          <div class="badge-desc">${b.description}</div>
+        </div>
+      `).join('');
+    }
+
+    // Load leaderboard
+    fetch(`${API_BASE}/api/users/leaderboard`)
+      .then(r => r.json())
+      .then((lb: Array<{ username: string; total_points: number; level: number }>) => {
+        const el = document.getElementById('leaderboard')!;
+        el.innerHTML = lb.slice(0, 10).map((u, i) => `
+          <div class="lb-row ${u.username === user.username ? 'lb-row--me' : ''}">
+            <span class="lb-pos">${i + 1}</span>
+            <span class="lb-name">${u.username}</span>
+            <span class="lb-lvl">Nv. ${u.level}</span>
+            <span class="lb-pts">${u.total_points.toLocaleString('es-AR')} pts</span>
+          </div>
+        `).join('');
+      });
+  }
+
+  // Init
+  document.addEventListener('DOMContentLoaded', () => {
+    (document.getElementById('login-btn') as HTMLElement)?.addEventListener('click', login);
+    (document.getElementById('register-btn') as HTMLElement)?.addEventListener('click', register);
+
+    const token = getToken();
+    if (token) {
+      fetch(`${API_BASE}/api/users/profile`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      .then(r => r.ok ? r.json() : null)
+      .then(user => {
+        if (user) loadProfile(user);
+        else {
+          clearToken();
+          (document.getElementById('auth-section') as HTMLElement).style.display = 'block';
+        }
+      })
+      .catch(() => {
+        (document.getElementById('auth-section') as HTMLElement).style.display = 'block';
+      });
+    } else {
+      (document.getElementById('auth-section') as HTMLElement).style.display = 'block';
+    }
+  });
+
+  (window as any).switchToRegister = switchToRegister;
+  (window as any).switchToLogin = switchToLogin;
+  (window as any).logout = logout;
+</script>
+
+<style>
+  .account-layout {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem;
+    min-height: 60vh;
+  }
+  /* ── Auth ────────────────────────────────── */
+  .auth-section { display: flex; justify-content: center; }
+  .auth-card {
+    background: white;
+    border: 1px solid var(--color-border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    width: 100%;
+    max-width: 420px;
+    text-align: center;
+  }
+  .auth-logo {
+    font-size: 2.5rem; font-weight: 900;
+    color: var(--color-primary); margin-bottom: 0.25rem;
+  }
+  .auth-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--color-text); }
+  .auth-subtitle { font-size: 0.85rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; margin-bottom: 2rem; }
+  .form-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; font-family: 'Playfair Display', serif; text-align: left; }
+  .form-group { margin-bottom: 1rem; text-align: left; }
+  .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.35rem; font-family: 'Inter', sans-serif; color: var(--color-text); }
+  .form-group input {
+    width: 100%; padding: 0.65rem 0.9rem;
+    border: 1px solid var(--color-border); border-radius: 8px;
+    font-size: 0.9rem; font-family: 'Inter', sans-serif;
+    outline: none; transition: border-color 0.2s;
+  }
+  .form-group input:focus { border-color: var(--color-primary); }
+  .btn-primary {
+    width: 100%; padding: 0.75rem;
+    background: var(--color-primary); color: white; border: none; border-radius: 8px;
+    font-size: 0.9rem; font-weight: 600; font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: background 0.15s; margin-bottom: 1rem;
+  }
+  .btn-primary:hover { background: var(--color-primary-dark); }
+  .form-switch { font-size: 0.8rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+  .link-btn { background: none; border: none; color: var(--color-primary); cursor: pointer; font-size: 0.8rem; font-family: 'Inter', sans-serif; text-decoration: underline; }
+  .auth-error { background: #fef2f2; border: 1px solid #fca5a5; border-radius: 6px; padding: 0.6rem 0.9rem; font-size: 0.82rem; color: #b91c1c; font-family: 'Inter', sans-serif; margin-top: 0.75rem; }
+
+  /* ── Profile ─────────────────────────────── */
+  .profile-header { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid var(--color-border); flex-wrap: wrap; }
+  .profile-avatar { width: 72px; height: 72px; background: var(--color-primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .profile-avatar span { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: white; }
+  .profile-name { font-size: 1.5rem; font-weight: 700; color: var(--color-text); }
+  .profile-level { font-size: 0.85rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; margin-top: 0.25rem; }
+  .btn-logout { margin-left: auto; padding: 0.5rem 1rem; border: 1px solid var(--color-border); border-radius: 6px; background: white; font-size: 0.8rem; color: var(--color-text-muted); cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.15s; }
+  .btn-logout:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+  /* ── Points card ─────────────────────────── */
+  .points-card { background: linear-gradient(135deg, #7f1d1d, #1a1a1a); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; color: white; }
+  .points-main { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem; }
+  .points-total { display: flex; flex-direction: column; }
+  .points-number { font-family: 'Playfair Display', serif; font-size: 3rem; font-weight: 900; line-height: 1; }
+  .points-label { font-size: 0.8rem; color: rgba(255,255,255,0.6); font-family: 'Inter', sans-serif; margin-top: 0.25rem; }
+  .points-today { text-align: right; }
+  .today-label { display: block; font-size: 0.7rem; color: rgba(255,255,255,0.5); font-family: 'Inter', sans-serif; }
+  .today-value { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; }
+  .progress-section {}
+  .progress-label { display: flex; justify-content: space-between; font-size: 0.78rem; font-family: 'Inter', sans-serif; color: rgba(255,255,255,0.75); margin-bottom: 0.5rem; }
+  .progress-bar { height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; overflow: hidden; margin-bottom: 0.5rem; }
+  .progress-fill { height: 100%; background: white; border-radius: 3px; transition: width 0.8s ease; }
+  .progress-next { font-size: 0.75rem; color: rgba(255,255,255,0.5); font-family: 'Inter', sans-serif; }
+  .progress-next strong { color: rgba(255,255,255,0.9); }
+
+  /* ── Sections ────────────────────────────── */
+  .section-heading { font-size: 1.3rem; font-weight: 700; color: var(--color-text); margin-bottom: 1.25rem; }
+  .badges-section, .leaderboard-section, .earn-section { margin-bottom: 2.5rem; }
+  .badges-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 0.85rem; }
+  .badge-item { background: white; border: 1px solid var(--color-border); border-radius: 10px; padding: 1rem 0.75rem; text-align: center; }
+  .badge-icon { font-size: 1.75rem; margin-bottom: 0.4rem; }
+  .badge-name { font-family: 'Playfair Display', serif; font-size: 0.82rem; font-weight: 700; color: var(--color-text); margin-bottom: 0.2rem; }
+  .badge-desc { font-size: 0.68rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+
+  /* ── Leaderboard ─────────────────────────── */
+  .lb-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.85rem; border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.85rem; }
+  .lb-row:nth-child(even) { background: var(--color-surface); }
+  .lb-row--me { background: #fef2f2 !important; border: 1px solid #fca5a5; }
+  .lb-pos { width: 24px; font-weight: 700; color: var(--color-text-muted); }
+  .lb-name { flex: 1; font-weight: 500; }
+  .lb-lvl { color: var(--color-text-muted); font-size: 0.75rem; }
+  .lb-pts { font-weight: 700; color: var(--color-primary); }
+
+  /* ── Earn grid ───────────────────────────── */
+  .earn-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.85rem; }
+  .earn-card { background: white; border: 1px solid var(--color-border); border-radius: 10px; padding: 1.1rem; text-align: center; }
+  .earn-card--special { border-color: var(--color-primary); background: #fef2f2; }
+  .earn-icon { font-size: 1.5rem; margin-bottom: 0.4rem; }
+  .earn-pts { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; color: var(--color-primary); margin-bottom: 0.3rem; }
+  .earn-desc { font-size: 0.78rem; font-family: 'Inter', sans-serif; color: var(--color-text); margin-bottom: 0.25rem; font-weight: 500; }
+  .earn-limit { font-size: 0.68rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+
+  @media (max-width: 640px) {
+    .earn-grid { grid-template-columns: repeat(2, 1fr); }
+    .account-layout { padding: 1.25rem 1rem; }
+  }
+</style>

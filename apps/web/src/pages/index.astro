@@ -1,0 +1,273 @@
+---
+import BaseHTML from '../layouts/BaseHTML.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import ArticleCard from '../components/ArticleCard.astro';
+import Sidebar from '../components/Sidebar.astro';
+import { getArticles, getFeaturedArticles } from '../lib/api';
+
+// Parallel API calls — 4x faster than sequential awaits
+const [featuredArticles, recentArticles, analysisArticles, historiaArticles] = await Promise.all([
+  getFeaturedArticles(),
+  getArticles({ limit: 12 }),
+  getArticles({ limit: 3, categoria: 'analisis' }),
+  getArticles({ limit: 3, categoria: 'historia' }),
+]);
+
+const heroArticle = featuredArticles?.[0];
+const secondaryArticles = featuredArticles?.slice(1, 4) ?? [];
+const mainGrid = recentArticles?.articles?.slice(0, 9) ?? [];
+---
+
+<BaseHTML>
+  <Header />
+
+  <main id="main-content">
+
+    <!-- ── HERO SECTION ─────────────────────────── -->
+    <section class="hero-section" aria-label="Nota destacada">
+      <div class="hero-inner">
+        {heroArticle ? (
+          <div class="hero-grid">
+            <div class="hero-main">
+              <ArticleCard article={heroArticle} variant="hero" />
+            </div>
+            <div class="hero-secondary">
+              {secondaryArticles.map(article => (
+                <ArticleCard article={article} variant="horizontal" />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div class="hero-empty">
+            <div class="hero-empty-content">
+              <div class="hero-empty-logo font-display">DT</div>
+              <h1 class="hero-empty-title font-display">Desde el Tablón</h1>
+              <p class="hero-empty-sub">El periodismo independiente que el hincha de River merece</p>
+              <p class="hero-empty-note">Cargando las últimas noticias...</p>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+
+    <!-- ── MAIN CONTENT ──────────────────────────── -->
+    <div class="content-layout">
+      <div class="content-main">
+
+        <!-- Recent articles grid -->
+        {mainGrid.length > 0 && (
+          <section class="section" aria-label="Últimas noticias">
+            <h2 class="section-title">
+              <span class="section-title-text">Últimas noticias</span>
+              <a href="/noticias" class="section-more">Ver todas →</a>
+            </h2>
+            <div class="articles-grid">
+              {mainGrid.map(article => (
+                <ArticleCard article={article} variant="default" />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <!-- Analysis section -->
+        {analysisArticles && analysisArticles.articles && analysisArticles.articles.length > 0 && (
+          <section class="section section--analysis" aria-label="Análisis tácticos">
+            <h2 class="section-title">
+              <span class="section-title-text">
+                <span class="section-icon" aria-hidden="true">📊</span>
+                Análisis táctico
+              </span>
+              <a href="/noticias?categoria=analisis" class="section-more">Ver más →</a>
+            </h2>
+            <div class="articles-grid articles-grid--3">
+              {analysisArticles.articles.map(article => (
+                <ArticleCard article={article} variant="default" />
+              ))}
+            </div>
+          </section>
+        )}
+
+        <!-- Historia / Efemérides section -->
+        {historiaArticles && historiaArticles.articles && historiaArticles.articles.length > 0 && (
+          <section class="section section--historia" aria-label="Historia del club">
+            <h2 class="section-title">
+              <span class="section-title-text">
+                <span class="section-icon" aria-hidden="true">📜</span>
+                Historia
+              </span>
+              <a href="/noticias?categoria=historia" class="section-more">Ver más →</a>
+            </h2>
+            <div class="articles-grid articles-grid--3">
+              {historiaArticles.articles.map(article => (
+                <ArticleCard article={article} variant="default" />
+              ))}
+            </div>
+            <div class="historia-source">
+              Datos históricos: <a href="https://lahistoriariver.com" target="_blank" rel="noopener noreferrer">lahistoriariver.com</a>
+            </div>
+          </section>
+        )}
+
+        <!-- Empty state -->
+        {(!mainGrid || mainGrid.length === 0) && (
+          <div class="empty-state">
+            <div class="empty-icon" aria-hidden="true">⚽</div>
+            <h2 class="empty-title font-display">Las notas están en camino</h2>
+            <p class="empty-desc">El pipeline de automatización está generando el contenido inicial. Volvé en unos minutos.</p>
+          </div>
+        )}
+      </div>
+
+      <!-- Sidebar -->
+      <div class="content-sidebar">
+        <Sidebar />
+      </div>
+    </div>
+  </main>
+
+  <Footer />
+</BaseHTML>
+
+<style>
+  /* ── Hero ─────────────────────────────────── */
+  .hero-section {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    padding: 1.5rem 0;
+  }
+  .hero-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 3fr 2fr;
+    gap: 1.25rem;
+    align-items: stretch;
+  }
+  .hero-secondary {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .hero-empty {
+    background: linear-gradient(135deg, #7f1d1d 0%, #1a1a1a 100%);
+    border-radius: 12px;
+    padding: 4rem 2rem;
+    text-align: center;
+  }
+  .hero-empty-logo {
+    font-size: 4rem;
+    font-weight: 900;
+    color: rgba(255,255,255,0.1);
+    margin-bottom: -1rem;
+  }
+  .hero-empty-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 0.5rem;
+  }
+  .hero-empty-sub {
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.7);
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 1rem;
+  }
+  .hero-empty-note {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.4);
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ── Layout ──────────────────────────────── */
+  .content-layout {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 2.5rem;
+    align-items: start;
+  }
+  .content-sidebar {
+    position: sticky;
+    top: 80px;
+  }
+
+  /* ── Sections ────────────────────────────── */
+  .section { margin-bottom: 3rem; }
+  .section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 2px solid var(--color-border);
+  }
+  .section-title-text {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--color-text);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section-icon { font-size: 1.1rem; }
+  .section-more {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--color-primary);
+    text-decoration: none;
+    font-family: 'Inter', sans-serif;
+  }
+  .section-more:hover { text-decoration: underline; }
+  .section--analysis .section-title { border-bottom-color: #1e40af; }
+  .section--historia .section-title { border-bottom-color: #92400e; }
+
+  /* ── Articles grid ───────────────────────── */
+  .articles-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.25rem;
+  }
+  .articles-grid--3 { grid-template-columns: repeat(3, 1fr); }
+
+  /* ── Historia source ─────────────────────── */
+  .historia-source {
+    margin-top: 0.75rem;
+    font-size: 0.73rem;
+    color: var(--color-text-muted);
+    font-family: 'Inter', sans-serif;
+  }
+  .historia-source a { color: var(--color-primary); text-decoration: none; }
+  .historia-source a:hover { text-decoration: underline; }
+
+  /* ── Empty state ─────────────────────────── */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 12px;
+    border: 2px dashed var(--color-border);
+  }
+  .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+  .empty-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: var(--color-text); }
+  .empty-desc { font-size: 0.9rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+
+  /* ── Responsive ──────────────────────────── */
+  @media (max-width: 1100px) {
+    .content-layout { grid-template-columns: 1fr; }
+    .content-sidebar { position: static; }
+    .articles-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 768px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-secondary { display: none; }
+    .articles-grid { grid-template-columns: 1fr; }
+    .hero-inner, .content-layout { padding-left: 1rem; padding-right: 1rem; }
+  }
+</style>
