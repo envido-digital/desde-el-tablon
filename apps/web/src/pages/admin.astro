@@ -162,23 +162,36 @@ import Header from '../components/Header.astro';
   }
 
   document.getElementById('run-pipeline-btn')?.addEventListener('click', async () => {
-    log('🔄 Iniciando pipeline...', 'info');
+    log('🔄 Iniciando pipeline... (puede tardar 30-60 segundos)', 'info');
     const btn = document.getElementById('run-pipeline-btn') as HTMLButtonElement;
     btn.disabled = true;
     btn.textContent = 'Ejecutando...';
+    const token = localStorage.getItem('dt-token') || '';
+
+    // El pipeline tarda ~20-60s — usamos AbortController con 90s de timeout
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 90000);
+
     try {
-      const token = localStorage.getItem('dt-token') || '';
       const res = await fetch(`${API_BASE}/api/admin/pipeline/run`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 'Authorization': `Bearer ${token}` },
+        signal: controller.signal,
       });
+      clearTimeout(timeout);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      log(`✅ Pipeline completado: ${data.stats.scraped} scrapeados, ${data.stats.published} publicados, ${data.stats.discarded} descartados`, 'success');
+      log(`✅ Pipeline: ${data.stats.scraped} scrapeados | ${data.stats.published} en cola | ${data.stats.discarded} descartados`, 'success');
       loadStats();
       loadQueue();
-    } catch {
-      log('✗ Error ejecutando pipeline', 'error');
+    } catch (err: unknown) {
+      clearTimeout(timeout);
+      if (err instanceof Error && err.name === 'AbortError') {
+        log('⏱ Pipeline corriendo en background (tardó más de 90s — revisá la cola en un momento)', 'info');
+        setTimeout(() => { loadStats(); loadQueue(); }, 5000);
+      } else {
+        log(`✗ Error: ${err instanceof Error ? err.message : 'desconocido'}`, 'error');
+      }
     } finally {
       btn.disabled = false;
       btn.textContent = '🔄 Ejecutar pipeline';

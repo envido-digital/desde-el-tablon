@@ -202,19 +202,21 @@ PARTE 1 — VERIFICACIÓN DE DATOS:
 Chequeá cada dato duro (número, fecha, estadística, nombre, resultado) contra las fuentes.
 Un dato "sin respaldo" es el que no aparece textualmente en ninguna de las fuentes provistas.
 
-PARTE 2 — EVALUACIÓN EDITORIAL AUTÓNOMA:
-Evaluás si la nota está apta para publicar en un medio serio sin ninguna intervención humana adicional.
-Criterios de rechazo automático:
-- Dato principal sin respaldo (el resultado del partido, el jugador que firma, la fecha del hecho)
-- Contradicción interna (el titular dice una cosa, el cuerpo otra)
-- Declaración atribuida que no está en las fuentes
-- Tono sensacionalista que viola el estilo del medio (BOMBA:, LOCURA:, etc.)
-- Nota que mezcla información de distintos partidos o mercados sin distinguirlos
-- Dato numérico de mercado (valor de pase, salario) sin respaldo en fuente de nivel 1 o 2
-- Nota demasiado corta: actualidad <1.400 palabras, analisis <2.300 palabras, historia <1.600 palabras, mercado <1.100 palabras
-- Menos de 3 marcadores <!-- AD_SLOT --> en cualquier nota (independientemente de la extensión)
-- Uso de frases prohibidas de IA: "no es menor", "vale la pena", "cabe destacar", "en ese sentido", "en el marco de", "resulta fundamental", "sin lugar a dudas", "cobra relevancia", "nos encontramos ante", "en definitiva" como conector. Si aparece alguna, indicá cuál en problemasEditoriales y mandá a reescribir.
-- Cinco o más párrafos consecutivos de longitud similar (todos largos o todos cortos) — señalá el fragmento y mandá a reescribir.
+PARTE 2 — EVALUACIÓN EDITORIAL:
+El sistema opera en MODO VOLUMEN: las notas van a revisión humana antes de publicarse.
+Tu único rol es detectar problemas GRAVES que harían la nota inutilizable.
+
+Criterios de rechazo (solo los más graves):
+- La nota está completamente vacía o es incoherente
+- El titular contradice directamente el cuerpo
+- La nota no tiene nada que ver con las fuentes provistas
+
+Criterios para reescribir (solo si hay un error concreto y fácil de corregir):
+- Un dato claramente incorrecto que sea el punto central de la nota
+
+En TODOS los demás casos: decisión = "publicar".
+No rechaces por longitud, estilo, frases, párrafos ni formato.
+La revisión humana se encarga del resto.
 
 Criterios para reescribir (la nota tiene buena base pero un problema solucionable):
 - 1-2 datos menores sin respaldo que se pueden eliminar sin romper la nota
