@@ -188,11 +188,18 @@ import Header from '../components/Header.astro';
   (window as any).approveArticle = approveArticle;
   (window as any).rejectArticle = rejectArticle;
 
-  // Init
-  loadStats();
-  loadQueue();
-  setInterval(loadStats, 30000);
-  setInterval(loadQueue, 60000);
+  // Init — esperamos a que __API_BASE__ esté disponible (lo inyecta BaseHTML)
+  function init() {
+    if (!window.__API_BASE__) {
+      setTimeout(init, 50);
+      return;
+    }
+    loadStats();
+    loadQueue();
+    setInterval(loadStats, 30000);
+    setInterval(loadQueue, 60000);
+  }
+  init();
 </script>
 
 <style>
