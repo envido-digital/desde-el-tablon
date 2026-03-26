@@ -141,6 +141,19 @@ app.post('/api/admin/pipeline/run', requireAdmin, async (_req, res) => {
   res.json({ success: true, stats });
 });
 
+// Reset items descartados para reprocesar
+app.post('/api/admin/debug/reset-discarded', requireAdmin, async (_req, res) => {
+  const { sqlite } = await import('./db/index.js');
+  // Marcar como no procesados los items que fueron descartados
+  const result = sqlite.prepare(`
+    UPDATE scraped_items SET processed = 0, article_id = NULL
+    WHERE article_id = 'discarded'
+  `).run();
+  // Limpiar tabla de descartes del pipeline
+  sqlite.prepare('DELETE FROM pipeline_discards').run();
+  res.json({ success: true, reset: result.changes, message: `${result.changes} items listos para reprocesar` });
+});
+
 // Debug: estado del scraper
 app.get('/api/admin/debug/scraper', requireAdmin, async (_req, res) => {
   const { sqlite } = await import('./db/index.js');

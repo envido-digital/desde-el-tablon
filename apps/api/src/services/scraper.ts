@@ -118,16 +118,14 @@ const RSS_FEEDS: Record<string, string> = {
   'clarin':              'https://www.clarin.com/rss/deportes/',
   'infobae':             'https://www.infobae.com/arc/outboundfeeds/rss/category/deportes/?outputType=xml',
   'la-nacion':           'https://www.lanacion.com.ar/arc/outboundfeeds/rss/categoria/deportes/',
-  // Medios deportivos
-  'ole':                 'https://www.ole.com.ar/rss/futbol-argentino.xml',
-  'tycsports':           'https://www.tycsports.com/rss/liga-profesional.xml',
-  // Institucionales
-  'carp-oficial':        'https://www.cariverplate.com.ar/noticias',
-  'afa':                 'https://www.afa.com.ar/feeds/noticias.rss',
+  // Medios deportivos — feeds alternativos
+  'ole':                 'https://www.ole.com.ar/rss/futbol.xml',
+  'tycsports':           'https://www.tycsports.com/rss.xml',
   // Fan sites especializados en River (con RSS)
   'riverdesdelatribuna': 'https://riverdesdelatribuna.com.ar/feed/',
   'lapaginamillonaria':  'https://lapaginamillonaria.com/rss/feed',
 };
+// Nota: carp-oficial y afa no tienen RSS funcional — se usan solo como fuentes HTML si se configura scraping directo
 
 // Fuentes sin RSS: scraping HTML directo
 interface HtmlScraperConfig {
