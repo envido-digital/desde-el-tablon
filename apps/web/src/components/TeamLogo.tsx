@@ -107,6 +107,7 @@ interface TeamLogoProps {
   size?: number;
   className?: string;
   style?: React.CSSProperties;
+  logoUrl?: string; // Direct URL from API (e.g. API-Football) — skips all lookups
 }
 
 type LogoState =
@@ -115,12 +116,12 @@ type LogoState =
   | { status: "remote";   src: string }
   | { status: "initials"; src: string };
 
-export function TeamLogo({ team, size = 28, className, style }: TeamLogoProps) {
+export function TeamLogo({ team, size = 28, className, style, logoUrl }: TeamLogoProps) {
   const [state, setState] = useState<LogoState>(() => {
+    // If a direct URL is provided, use it immediately — no lookup needed
+    if (logoUrl) return { status: "remote", src: logoUrl };
     // Synchronous check: local map first
-    if (LOGOS[team]) {
-      return { status: "local", src: LOGOS[team] };
-    }
+    if (LOGOS[team]) return { status: "local", src: LOGOS[team] };
     // Check runtime cache
     if (runtimeCache.has(team)) {
       const cached = runtimeCache.get(team);

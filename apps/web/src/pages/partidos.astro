@@ -19,13 +19,10 @@ function fmtDate(d: string) {
   });
 }
 function fmtTime(d: string) {
-  const date = new Date(d);
-  const parts = new Intl.DateTimeFormat('es-AR', {
-    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TZ
-  }).formatToParts(date);
-  const h = parts.find(p => p.type === 'hour')?.value ?? '00';
-  const m = parts.find(p => p.type === 'minute')?.value ?? '00';
-  return `${h}:${m}`;
+  // en-GB always returns 24h format (HH:MM) regardless of OS locale settings
+  return new Date(d).toLocaleTimeString('en-GB', {
+    hour: '2-digit', minute: '2-digit', timeZone: TZ
+  });
 }
 function fmtShortDate(d: string) {
   return new Date(d).toLocaleDateString('es-AR', {
@@ -78,7 +75,7 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
             <div class="match-round">{m.competition}</div>
             <div class="match-body">
               <div class="team-block">
-                <TeamLogo team={m.homeTeam} size={40} client:load />
+                <TeamLogo team={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={40} client:load />
                 <span class:list={['team-name', { 'team-name--river': m.homeTeam.includes('River') }]}>
                   {m.homeTeam}
                 </span>
@@ -89,7 +86,7 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
                 <div class="upcoming-time">{fmtTime(m.date)} hs</div>
               </div>
               <div class="team-block team-block--right">
-                <TeamLogo team={m.awayTeam} size={40} client:load />
+                <TeamLogo team={m.awayTeam} logoUrl={m.awayTeamLogo || undefined} size={40} client:load />
                 <span class:list={['team-name', 'team-name--right', { 'team-name--river': m.awayTeam.includes('River') }]}>
                   {m.awayTeam}
                 </span>
@@ -129,7 +126,7 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
               </div>
               <div class="match-body match-body--result">
                 <div class="team-block">
-                  <TeamLogo team={m.homeTeam} size={32} client:load />
+                  <TeamLogo team={m.homeTeam} logoUrl={m.homeTeamLogo || undefined} size={32} client:load />
                   <span class:list={['team-name', { 'team-name--river': m.homeTeam.includes('River') }]}>
                     {m.homeTeam}
                   </span>
@@ -147,7 +144,7 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
                   )}
                 </div>
                 <div class="team-block team-block--right">
-                  <TeamLogo team={m.awayTeam} size={32} client:load />
+                  <TeamLogo team={m.awayTeam} logoUrl={m.awayTeamLogo || undefined} size={32} client:load />
                   <span class:list={['team-name', 'team-name--right', { 'team-name--river': m.awayTeam.includes('River') }]}>
                     {m.awayTeam}
                   </span>

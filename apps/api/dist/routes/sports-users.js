@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getStandings, getNextMatch, getLastResult, getAllMatches, getZonaStandings, getAnualStandings, getCopaStandings } from '../services/sports.js';
+import { getStandings, getNextMatch, getLastResult, getAllMatches, getZonaStandings, getZonaAStandings, getCopaStandings } from '../services/sports.js';
 import { awardPoints, getUserProfile, getLeaderboard, recordDailyLogin, hasReadArticleToday } from '../services/gamification.js';
 import { hashPassword, verifyPassword, signToken, validatePassword } from '../lib/auth.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -10,11 +10,123 @@ export const usersRouter = Router();
 // ── Sports ─────────────────────────────────────────────────────────────────────
 sportsRouter.get('/standings', async (_req, res) => res.json(await getStandings()));
 sportsRouter.get('/standings-zona', async (_req, res) => res.json(await getZonaStandings()));
-sportsRouter.get('/standings-anual', async (_req, res) => res.json(await getAnualStandings()));
+sportsRouter.get('/standings-zona-a', async (_req, res) => res.json(await getZonaAStandings()));
 sportsRouter.get('/standings-copa', async (_req, res) => res.json(await getCopaStandings()));
 sportsRouter.get('/next-match', async (_req, res) => res.json(await getNextMatch()));
 sportsRouter.get('/last-result', async (_req, res) => res.json(await getLastResult()));
 sportsRouter.get('/all-matches', async (_req, res) => res.json(await getAllMatches()));
+// ── Debug: testea la API key y endpoints reales ────────────────────────────────
+sportsRouter.get('/debug', async (_req, res) => {
+    const key = process.env.API_FOOTBALL_KEY ?? '';
+    const season = new Date().getFullYear();
+    const results = { key_loaded: key.length > 10, key_length: key.length, season };
+    if (!key.length)
+        return res.json({ ...results, error: 'API_FOOTBALL_KEY no cargada' });
+    const apiFetch = async (path) => {
+        const r = await fetch(`https://v3.football.api-sports.io${path}`, { headers: { 'x-apisports-key': key } });
+        return { http: r.status, data: await r.json() };
+    };
+    // Status
+    try {
+        const { http, data } = await apiFetch('/status');
+        results.plan = data?.response?.subscription?.plan;
+        results.requests_today = data?.response?.requests?.current;
+        results.limit_day = data?.response?.requests?.limit_day;
+        results.api_http = http;
+    }
+    catch (e) {
+        results.api_error = e.message;
+    }
+    // Liga standings (all zones)
+    try {
+        const { http, data } = await apiFetch(`/standings?league=128&season=${season}`);
+        const zones = data?.response?.[0]?.league?.standings ?? [];
+        results.liga = {
+            http, errors: data?.errors,
+            zones: zones.length,
+            zone_groups: zones.map((z) => z[0]?.group),
+            river_zone: zones.findIndex((z) => z.some((e) => e.team?.id === 435)),
+        };
+    }
+    catch (e) {
+        results.liga_error = e.message;
+    }
+    // Copa Sudamericana - raw response inspection
+    try {
+        const { http, data } = await apiFetch(`/standings?league=11&season=${season}`);
+        const resp = data?.response ?? [];
+        const zones = resp[0]?.league?.standings ?? [];
+        const riverZone = zones.findIndex((z) => z.some((e) => e.team?.id === 435));
+        results.sudamericana = {
+            http, errors: data?.errors,
+            total_response_items: resp.length,
+            total_zones: zones.length,
+            river_zone_index: riverZone,
+            river_found: riverZone !== -1,
+            group_names: zones.slice(0, 4).map((z) => z[0]?.group),
+            // Show raw structure of first response item if no zones found
+            raw_first_item_keys: resp[0] ? Object.keys(resp[0]) : [],
+            raw_league_keys: resp[0]?.league ? Object.keys(resp[0].league) : [],
+        };
+    }
+    catch (e) {
+        results.sudamericana_error = e.message;
+    }
+    // Copa Sudamericana - try with team filter
+    try {
+        const { http, data } = await apiFetch(`/standings?league=11&season=${season}&team=435`);
+        const resp = data?.response ?? [];
+        const zones = resp[0]?.league?.standings ?? [];
+        results.sudamericana_team_filter = {
+            http, errors: data?.errors,
+            total_response_items: resp.length,
+            zones: zones.length,
+            river_found: zones.some((z) => z.some((e) => e.team?.id === 435)),
+        };
+    }
+    catch (e) {
+        results.sudamericana_team_filter_error = e.message;
+    }
+    // Try different league IDs for Copa Sudamericana
+    try {
+        // Sometimes API uses different IDs - test 11 and also check /leagues for sudamericana
+        const { http, data } = await apiFetch(`/leagues?name=Sudamericana&current=true`);
+        results.sudamericana_leagues = {
+            http,
+            found: (data?.response ?? []).map((l) => ({ id: l.league?.id, name: l.league?.name, season: l.seasons?.find((s) => s.current)?.year }))
+        };
+    }
+    catch (e) {
+        results.sudamericana_leagues_error = e.message;
+    }
+    // Inspect Copa Sudamericana fixtures for River - to understand data we can use to build standings
+    try {
+        const { http, data } = await apiFetch(`/fixtures?league=11&season=${season}&team=435`);
+        const fixtures = data?.response ?? [];
+        const groupFixtures = fixtures.filter((f) => (f.league?.round ?? '').toLowerCase().includes('group'));
+        results.suda_fixtures = {
+            http,
+            errors: data?.errors,
+            total_fixtures: fixtures.length,
+            group_fixtures: groupFixtures.length,
+            rounds: [...new Set(fixtures.map((f) => f.league?.round))],
+            sample_fixture: groupFixtures[0] ? {
+                round: groupFixtures[0].league?.round,
+                home: groupFixtures[0].teams?.home?.name,
+                home_id: groupFixtures[0].teams?.home?.id,
+                away: groupFixtures[0].teams?.away?.name,
+                away_id: groupFixtures[0].teams?.away?.id,
+                score: `${groupFixtures[0].goals?.home}-${groupFixtures[0].goals?.away}`,
+                status: groupFixtures[0].fixture?.status?.short,
+                date: groupFixtures[0].fixture?.date,
+            } : null,
+        };
+    }
+    catch (e) {
+        results.suda_fixtures_error = e.message;
+    }
+    res.json(results);
+});
 // ── Register ───────────────────────────────────────────────────────────────────
 usersRouter.post('/register', async (req, res) => {
     const { email, username, password } = req.body;

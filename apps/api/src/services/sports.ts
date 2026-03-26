@@ -1,130 +1,99 @@
 import { sqlite } from '../db/index.js';
 import { v4 as uuidv4 } from 'uuid';
 
-const RIVER_PLATE_ID = 26;
-const ARGENTINA_LEAGUE_ID = 128;
-const PROMIEDOS_LIGA = 'https://www.promiedos.com.ar/league/liga-profesional/hc';
-const PROMIEDOS_LIGA_ANUAL = 'https://www.promiedos.com.ar/league/liga-profesional/ha';
-const PROMIEDOS_LIBERTADORES = 'https://www.promiedos.com.ar/league/copa-libertadores/hc';
-const PROMIEDOS_SUDAMERICANA = 'https://www.promiedos.com.ar/league/copa-sudamericana/hc';
-const PROMIEDOS_RIVER = 'https://www.promiedos.com.ar/team/river-plate/igi';
-const PROMIEDOS_HEADERS = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Accept': 'text/html,application/xhtml+xml',
-  'Accept-Language': 'es-AR,es;q=0.9',
+// ─── Constantes ───────────────────────────────────────────────────────────────
+const RIVER_ID        = 435;
+const LIGA_ID         = 128;
+const SUDAMERICANA_ID = 11;
+const LIBERTADORES_ID = 13;
+const SEASON          = new Date().getFullYear();  // auto-actualiza cada año
+
+const API_BASE = 'https://v3.football.api-sports.io';
+
+// ─── Nombres canónicos por ID de equipo ───────────────────────────────────────
+const TEAM_NAMES: Record<number, string> = {
+  // River y grupo Copa Sudamericana 2026
+  435:  'River Plate',
+  3701: 'Blooming',
+  2810: 'Carabobo',
+  794:  'RB Bragantino',
+  // Liga Profesional — nombres exactos
+  463:  'Aldosivi',
+  458:  'Argentinos Juniors',
+  455:  'Atlético Tucumán',
+  449:  'Banfield',
+  2432: 'Barracas Central',
+  440:  'Belgrano',
+  451:  'Boca Juniors',
+  790:  'Central Córdoba',
+  1065: 'Central Córdoba',
+  442:  'Defensa y Justicia',
+  476:  'Deportivo Riestra',
+  2424: 'Estudiantes de Río Cuarto',
+  450:  'Estudiantes LP',
+  434:  'Gimnasia LP',
+  1066: 'Gimnasia de Mendoza',
+  445:  'Huracán',
+  453:  'Independiente',
+  473:  'Independiente Rivadavia',
+  478:  'Instituto',
+  446:  'Lanús',
+  457:  "Newell's",
+  1064: 'Platense',
+  436:  'Racing Club',
+  437:  'Rosario Central',
+  460:  'San Lorenzo',
+  474:  'Sarmiento',
+  456:  'Talleres',
+  452:  'Tigre',
+  441:  'Unión',
+  438:  'Vélez Sarsfield',
+  // Otros
+  439:  'Godoy Cruz',
+  444:  'Patronato',
+  448:  'Colón',
 };
 
-// ─── Estadios argentinos y de CONMEBOL ───────────────────────────────────────
-const ESTADIOS: Record<string, string> = {
-  'boca juniors': 'Estadio Alberto J. Armando (La Bombonera)',
-  'san lorenzo': 'Estadio Pedro Bidegain (Nuevo Gasómetro)',
-  'independiente': 'Estadio Libertadores de América',
-  'racing club': 'Estadio Juan Domingo Perón (El Cilindro)',
-  'racing': 'Estadio Juan Domingo Perón (El Cilindro)',
-  'estudiantes': 'Estadio Jorge Luis Hirschi',
-  'vélez': 'Estadio José Amalfitani',
-  'velez': 'Estadio José Amalfitani',
-  'huracán': 'Estadio Tomás A. Ducó (El Palacio)',
-  'huracan': 'Estadio Tomás A. Ducó (El Palacio)',
-  'lanús': 'Estadio Ciudad de Lanús (La Fortaleza)',
-  'lanus': 'Estadio Ciudad de Lanús (La Fortaleza)',
-  'argentinos juniors': 'Estadio Diego A. Maradona',
-  'defensa y justicia': 'Estadio Norberto Tomaghello',
-  'talleres': 'Estadio Mario A. Kempes',
-  'belgrano': 'Estadio Julio César Villagra',
-  'banfield': 'Estadio Florencio Sola',
-  'gimnasia': 'Estadio Juan Carlos Zerillo (El Bosque)',
-  "newell's": 'Estadio Marcelo Bielsa',
-  'newells': 'Estadio Marcelo Bielsa',
-  'rosario central': 'Estadio Gigante de Arroyito',
-  'colón': 'Estadio Brigadier Gral. Estanislao López',
-  'colon': 'Estadio Brigadier Gral. Estanislao López',
-  'unión': 'Estadio 15 de Abril',
-  'union': 'Estadio 15 de Abril',
-  'atlético tucumán': 'Estadio Monumental José Fierro',
-  'atletico tucuman': 'Estadio Monumental José Fierro',
-  'central córdoba': 'Estadio Alfredo Terrera',
-  'central cordoba': 'Estadio Alfredo Terrera',
-  'godoy cruz': 'Estadio Malvinas Argentinas',
-  'independiente rivadavia': 'Estadio Bautista Gargantini',
-  'platense': 'Estadio Ciudad de Vicente López',
-  'tigre': 'Estadio José Dellagiovanna',
-  'sarmiento': 'Estadio Eva Perón',
-  'instituto': 'Estadio Juan Domingo Perón (Alta Córdoba)',
-  'barracas central': 'Estadio Claudio Chiqui Tapia',
-  'deportivo riestra': 'Estadio Guillermo Laza',
-  'riestra': 'Estadio Guillermo Laza',
-  'aldosivi': 'Estadio José María Minella',
-  'ferro': 'Estadio Dr. Ricardo Etcheverri',
-  'san martín': 'Estadio San Martín de San Juan',
-  'san martin': 'Estadio San Martín de San Juan',
-  // CONMEBOL
-  'flamengo': 'Estadio Maracanã',
-  'fluminense': 'Estadio Maracanã',
-  'palmeiras': 'Allianz Parque',
-  'são paulo': 'MorumBIS',
-  'santos': 'Estadio Vila Belmiro',
-  'athletico paranaense': 'Ligga Arena',
-  'atletico mineiro': 'Arena MRV',
-  'botafogo': 'Estadio Nilton Santos (Engenhão)',
-  'inter': 'Beira-Rio',
-  'gremio': 'Arena do Grêmio',
-  'cruzeiro': 'Estadio Mineirão',
-  'peñarol': 'Estadio Centenario',
-  'nacional': 'Estadio Gran Parque Central',
-  'olimpia': 'Estadio Manuel Ferreira',
-  'cerro porteño': 'Estadio General Pablo Rojas (La Olla)',
-  'colo-colo': 'Estadio Monumental David Arellano',
-  'u de chile': 'Estadio Nacional Julio Martínez Prádanos',
-  'universidad de chile': 'Estadio Nacional Julio Martínez Prádanos',
-  'u. de chile': 'Estadio Nacional Julio Martínez Prádanos',
-  'u católica': 'Estadio San Carlos de Apoquindo',
-  'liga de quito': 'Estadio Rodrigo Paz Delgado',
-  'emelec': 'Estadio George Capwell',
-  'barcelona sc': 'Estadio Monumental Isidro Romero Carbo',
-  'deportivo cuenca': 'Estadio Alejandro Serrano Aguilar',
-  'millonarios': 'Estadio El Campín',
-  'nacional bogota': 'Estadio El Campín',
-  'independiente medellín': 'Estadio Atanasio Girardot',
-  'santa fe': 'Estadio El Campín',
-  'alianza lima': 'Estadio Alejandro Villanueva (Matute)',
-  'universitario': 'Estadio Monumental de Ate',
-  'sporting cristal': 'Estadio Alberto Gallardo',
-  'caracas': 'Estadio Olímpico',
-  'carabobo': 'Estadio Misael Delgado',
-  'bolivar': 'Estadio Hernando Siles',
-  'the strongest': 'Estadio Hernando Siles',
-  'oriente petrolero': 'Estadio Ramón Tahuichi Aguilera',
-  'sport recife': 'Estadio Adelmar da Costa Carvalho (Ilha do Retiro)',
-  'fortaleza': 'Estadio Castelão',
-  'ceara': 'Estadio Castelão',
-  'nacional amadora': 'Estadio do Restelo',
-};
-
-function resolveVenue(isHome: boolean, opponentName: string): string {
-  if (isHome) return 'Estadio Más Monumental';
-  const lower = opponentName.toLowerCase().trim();
-  for (const [key, stadium] of Object.entries(ESTADIOS)) {
-    if (lower.includes(key) || key.includes(lower)) return stadium;
-  }
-  return `Estadio de ${opponentName}`;
+function normalizeTeamName(id: number, fallback: string): string {
+  return TEAM_NAMES[id] ?? fallback;
 }
 
-export interface MatchData {
-  id: string;
-  homeTeam: string;
-  homeTeamLogo?: string;
-  awayTeam: string;
-  awayTeamLogo?: string;
-  homeScore: number | null;
-  awayScore: number | null;
-  status: 'NS' | 'LIVE' | 'FT' | 'HT' | 'TBD';
-  minute: number | null;
-  date: string;
-  venue: string;
-  competition: string;
+function getApiKey(): string {
+  return process.env.API_FOOTBALL_KEY ?? '';
 }
 
+function apiFetch(path: string): Promise<any> {
+  const key = getApiKey();
+  if (!key) throw new Error('API_FOOTBALL_KEY no configurada');
+  return fetch(`${API_BASE}${path}`, {
+    headers: {
+      'x-apisports-key': key,
+      'Accept': 'application/json',
+    },
+  }).then(r => {
+    if (!r.ok) throw new Error(`API-Football HTTP ${r.status}`);
+    return r.json();
+  });
+}
+
+// ─── Cache ────────────────────────────────────────────────────────────────────
+function getCached(key: string, maxAgeMinutes: number): unknown | null {
+  const row = sqlite.prepare(
+    'SELECT data, cached_at FROM match_cache WHERE match_id = ?'
+  ).get(key) as { data: string; cached_at: string } | undefined;
+  if (!row) return null;
+  const ageMinutes = (Date.now() - new Date(row.cached_at).getTime()) / 60000;
+  if (ageMinutes > maxAgeMinutes) return null;
+  return JSON.parse(row.data);
+}
+
+function setCache(key: string, data: unknown) {
+  sqlite.prepare(
+    'INSERT OR REPLACE INTO match_cache (id, match_id, data, cached_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)'
+  ).run(uuidv4(), key, JSON.stringify(data));
+}
+
+// ─── Interfaces ───────────────────────────────────────────────────────────────
 export interface StandingsRow {
   position: number;
   team: string;
@@ -142,472 +111,447 @@ export interface StandingsRow {
   isRiver: boolean;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function getVal(values: Array<{key: string; value: any}>, key: string): string {
-  return values.find(v => v.key === key)?.value ?? '0';
+export interface StandingsResult {
+  rows: StandingsRow[];
+  label: string;
+  competition: string;
+  group: string;
 }
 
-function trendToForm(trend: number[]): string[] {
-  // Promiedos: 0=derrota, 1=victoria, 2=empate
-  return trend.slice(-5).map(t => t === 1 ? 'W' : t === 2 ? 'D' : 'L');
+export interface MatchData {
+  id: string;
+  homeTeam: string;
+  homeTeamLogo?: string;
+  awayTeam: string;
+  awayTeamLogo?: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  status: 'NS' | 'LIVE' | 'FT' | 'HT' | 'TBD';
+  minute: number | null;
+  date: string;
+  venue: string;
+  competition: string;
 }
 
-function getCached(key: string, maxAgeMinutes: number): unknown | null {
-  const row = sqlite.prepare(
-    'SELECT data, cached_at FROM match_cache WHERE match_id = ?'
-  ).get(key) as { data: string; cached_at: string } | undefined;
-  if (!row) return null;
-  const ageMinutes = (Date.now() - new Date(row.cached_at).getTime()) / 60000;
-  if (ageMinutes > maxAgeMinutes) return null;
-  return JSON.parse(row.data);
-}
-
-function setCache(key: string, data: unknown) {
-  sqlite.prepare(
-    'INSERT OR REPLACE INTO match_cache (id, match_id, data, cached_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)'
-  ).run(uuidv4(), key, JSON.stringify(data));
-}
-
-// Extraer __NEXT_DATA__ JSON del HTML de Promiedos
-function extractNextData(html: string): any {
-  const start = html.indexOf('"__NEXT_DATA__"');
-  if (start === -1) throw new Error('__NEXT_DATA__ no encontrado');
-  const jsonStart = html.indexOf('>', start) + 1;
-  const jsonEnd = html.indexOf('</script>', jsonStart);
-  return JSON.parse(html.slice(jsonStart, jsonEnd));
-}
-
-// ─── Helper: extraer bloques de equipos del HTML de Promiedos ────────────────
-function extractTeamBlocks(html: string): Array<{num: number; values: Array<{key: string; value: any}>; name: string}> {
-  const blocks: Array<{num: number; values: Array<{key: string; value: any}>; name: string}> = [];
-  const teamRegex = /\{"num":(\d+),"values":(\[.*?\]),"entity":\{"type":1,"object":\{"name":"([^"]+)"/g;
-  let m;
-  while ((m = teamRegex.exec(html)) !== null) {
-    try {
-      blocks.push({ num: parseInt(m[1]), values: JSON.parse(m[2]), name: m[3] });
-    } catch { /* ignorar bloque malformado */ }
-  }
-  return blocks;
-}
-
-function blockToRow(block: {num: number; values: Array<{key: string; value: any}>; name: string}): StandingsRow {
-  const vals = block.values;
-  const goals = (getVal(vals, 'Goals') || '0:0').split(':');
-  const gf = parseInt(goals[0]) || 0;
-  const gc = parseInt(goals[1]) || 0;
-  const trend = vals.find(v => v.key === '{trend}')?.value ?? [];
-  const isRiver = block.name.toLowerCase().includes('river');
+// ─── Parsers ──────────────────────────────────────────────────────────────────
+function parseStandingEntry(entry: any): StandingsRow {
+  const isRiver = entry.team?.id === RIVER_ID;
+  const form = (entry.form ?? '')
+    .split('')
+    .map((c: string) => c === 'W' ? 'W' : c === 'D' ? 'D' : 'L')
+    .slice(-5);
   return {
-    position: block.num, team: block.name, teamLogo: '',
-    teamId: isRiver ? RIVER_PLATE_ID : 0,
-    played: parseInt(getVal(vals, 'GamePlayed')) || 0,
-    wins: parseInt(getVal(vals, 'GamesWon')) || 0,
-    draws: parseInt(getVal(vals, 'GamesEven')) || 0,
-    losses: parseInt(getVal(vals, 'GamesLost')) || 0,
-    goalsFor: gf, goalsAgainst: gc, goalDiff: gf - gc,
-    points: parseInt(getVal(vals, 'Points')) || 0,
-    form: trendToForm(Array.isArray(trend) ? trend : []),
+    position:     entry.rank ?? 0,
+    team:         normalizeTeamName(entry.team?.id, entry.team?.name ?? ''),
+    teamLogo:     entry.team?.logo ?? '',
+    teamId:       entry.team?.id ?? 0,
+    played:       entry.all?.played ?? 0,
+    wins:         entry.all?.win ?? 0,
+    draws:        entry.all?.draw ?? 0,
+    losses:       entry.all?.lose ?? 0,
+    goalsFor:     entry.all?.goals?.for ?? 0,
+    goalsAgainst: entry.all?.goals?.against ?? 0,
+    goalDiff:     entry.goalsDiff ?? 0,
+    points:       entry.points ?? 0,
+    form,
     isRiver,
   };
 }
 
-// Intenta extraer el nombre del grupo/zona del HTML
-function extractGroupNames(html: string): string[] {
-  const names: string[] = [];
-  // Buscar títulos de zona/grupo en el JSON embebido
-  const re = /"title"\s*:\s*"((?:Zona|Grupo|Group|Zone)\s*[A-Z0-9][^"]{0,20})"/gi;
-  let m;
-  while ((m = re.exec(html)) !== null) names.push(m[1]);
-  // También buscar patrones tipo "Zona A" o "Grupo A" sueltos
-  const re2 = /(?:Zona|Grupo)\s+([A-Z])/g;
-  while ((m = re2.exec(html)) !== null) {
-    const label = `${m[0]}`;
-    if (!names.includes(label)) names.push(label);
-  }
-  return [...new Set(names)];
+// ─── Traducción de competiciones ──────────────────────────────────────────────
+function translateCompetition(league: string, round: string): string {
+  const leagueMap: Record<string, string> = {
+    'Liga Profesional Argentina': 'Liga Profesional',
+    'CONMEBOL Sudamericana':      'Copa Sudamericana',
+    'CONMEBOL Libertadores':      'Copa Libertadores',
+    'Copa Argentina':             'Copa Argentina',
+    'Supercopa Argentina':        'Supercopa Argentina',
+    'Recopa Sudamericana':        'Recopa Sudamericana',
+  };
+  const leagueEs = leagueMap[league] ?? league;
+  if (!round) return leagueEs;
+
+  const roundEs = round
+    .replace(/Regular Season\s*-\s*(\d+)/i,      'Apertura · Fecha $1')
+    .replace(/^Apertura\s*-\s*(\d+)$/i,           'Apertura · Fecha $1')
+    .replace(/^Clausura\s*-\s*(\d+)$/i,           'Clausura · Fecha $1')
+    .replace(/Group Stage\s*-\s*(\d+)/i,          'Fase de Grupos · Fecha $1')
+    .replace(/Round of 128\s*-\s*\d+/i,           '64avos de final')
+    .replace(/Round of 64\s*-\s*\d+/i,            '32avos de final')
+    .replace(/Round of 32\s*-\s*\d+/i,            '16avos de final')
+    .replace(/Round of 16\s*-\s*\d+/i,            'Octavos de final')
+    .replace(/Quarter-finals?\s*-\s*\d+/i,        'Cuartos de final')
+    .replace(/Semi-finals?\s*-\s*\d+/i,           'Semifinal')
+    .replace(/^Final\s*-\s*\d+$/i,                'Final')
+    .replace(/1st Round\s*-\s*\d+/i,              'Primera ronda')
+    .replace(/2nd Round\s*-\s*\d+/i,              'Segunda ronda')
+    .replace(/3rd Round\s*-\s*\d+/i,              'Tercera ronda')
+    .replace(/Playoff\s*-\s*\d+/i,                'Playoff');
+
+  return `${leagueEs} · ${roundEs}`;
 }
 
-// Extrae el grupo de River (el conjunto de teams con posición contigua empezando en 1)
-function extractRiverGroup(allBlocks: ReturnType<typeof extractTeamBlocks>): {
-  group: ReturnType<typeof extractTeamBlocks>;
-  groupIndex: number;
-} {
-  const riverIdx = allBlocks.findIndex(b => b.name.toLowerCase().includes('river'));
-  if (riverIdx === -1) throw new Error('River no encontrado');
+// ─── Normalización de venue ────────────────────────────────────────────────────
+const MONUMENTAL = 'Estadio Mâs Monumental';
 
-  let groupStart = riverIdx;
-  for (let i = riverIdx; i >= 0; i--) {
-    if (allBlocks[i].num === 1) { groupStart = i; break; }
-  }
-  let groupEnd = allBlocks.length;
-  for (let i = riverIdx + 1; i < allBlocks.length; i++) {
-    if (allBlocks[i].num === 1) { groupEnd = i; break; }
-  }
+const VENUE_FIXES: Record<string, string> = {
+  'Estadio Monumental':               MONUMENTAL,
+  'Estadio Monumental de Nunez':      MONUMENTAL,
+  'Estadio Antonio Vespucio Liberti': MONUMENTAL,
+  'River Plate':                      MONUMENTAL,
+  'Nabi Abi Chedid':                  'Estadio Nabi Abi Chedid',
+  'Estadio Monumental Jose Fierro':   'Estadio Monumental José Fierro',
+};
 
-  // Calcular índice del grupo (0-based) para mapear al nombre
-  const groupSize = groupEnd - groupStart;
-  const groupIndex = groupSize > 0 ? Math.round(groupStart / groupSize) : 0;
+// Fallback por ID del equipo local cuando la API no devuelve venue
+const VENUE_BY_TEAM_ID: Record<number, string> = {
+  436:  'Estadio Juan Domingo Perón',        // Racing Club
+  452:  'Estadio José Dellagiovanna',         // Tigre
+  794:  'Estadio Nabi Abi Chedid',            // RB Bragantino
+  434:  'Estadio Juan Carmelo Zerillo',       // Gimnasia LP
+  440:  'Estadio Julio César Villagra',       // Belgrano
+  438:  'Estadio José Amalfitani',            // Vélez Sarsfield
+  451:  'Estadio Alberto J. Armando',         // Boca Juniors
+  442:  'Estadio Norberto Tomaghello',        // Defensa y Justicia
+  446:  'Estadio Ciudad de Lanús',            // Lanús
+  460:  'Estadio Pedro Bidegain',             // San Lorenzo
+  445:  'Estadio Tomás A. Ducó',             // Huracán
+  449:  'Estadio Florencio Sola',             // Banfield
+  456:  'Estadio Mario Alberto Kempes',       // Talleres
+  437:  'Estadio Gigante de Arroyito',        // Rosario Central
+  457:  'Estadio Marcelo Bielsa',             // Newell's
+  450:  'Estadio Jorge Luis Hirschi',         // Estudiantes LP
+  458:  'Estadio Diego Armando Maradona',     // Argentinos Juniors
+  474:  'Estadio Eva Perón',                  // Sarmiento
+  473:  'Estadio Bautista Gargantini',        // Independiente Rivadavia
+  1064: 'Estadio Ciudad de Vicente López',    // Platense
+  453:  'Estadio Libertadores de América',    // Independiente
+  476:  'Estadio Guillermo Laza',             // Deportivo Riestra
+  2432: 'Estadio Claudio Chiqui Tapia',       // Barracas Central
+  478:  'Estadio Juan Domingo Perón (Alta Córdoba)', // Instituto
+  455:  'Estadio Monumental José Fierro',     // Atlético Tucumán
+  2810: 'Estadio Polideportivo Misael Delgado', // Carabobo
+  3701: 'Estadio Ramón Tahuichi Aguilera',    // Blooming
+};
 
-  return { group: allBlocks.slice(groupStart, groupEnd), groupIndex };
-}
-
-// ─── Scraper genérico ─────────────────────────────────────────────────────────
-export interface StandingsResult {
-  rows: StandingsRow[];
-  label: string;         // e.g. "Zona A · Liga Profesional"
-  competition: string;   // e.g. "Liga Profesional"
-  group: string;         // e.g. "Zona A"
-}
-
-async function scrapeStandingsPage(
-  url: string,
-  competitionLabel: string,
-  mode: 'river-group' | 'all'
-): Promise<StandingsResult> {
-  const res = await fetch(url, { headers: PROMIEDOS_HEADERS });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const html = await res.text();
-
-  const allBlocks = extractTeamBlocks(html);
-  if (allBlocks.length === 0) throw new Error('Sin equipos en ' + url);
-
-  const groupNames = extractGroupNames(html);
-
-  if (mode === 'all') {
-    const rows = allBlocks.map(blockToRow).sort((a, b) => a.position - b.position || b.points - a.points);
-    return { rows, label: competitionLabel, competition: competitionLabel, group: '' };
-  }
-
-  // river-group mode
-  const { group, groupIndex } = extractRiverGroup(allBlocks);
-  const groupName = groupNames[groupIndex] || (groupNames[0] || `Zona A`);
-  const label = `${groupName} · ${competitionLabel}`;
-
-  const rows = group.map(blockToRow).sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff);
-  return { rows, label, competition: competitionLabel, group: groupName };
-}
-
-// ─── Promiedos: tabla de posiciones (zona de River) ──────────────────────────
-async function scrapePromiedosStandings(): Promise<StandingsRow[]> {
-  const result = await scrapeStandingsPage(PROMIEDOS_LIGA, 'Liga Profesional', 'river-group');
-  return result.rows;
-}
-
-// ─── Copa: auto-detecta Libertadores o Sudamericana ──────────────────────────
-async function scrapeCopaStandings(): Promise<StandingsResult> {
-  // Intentar Copa Libertadores primero
-  for (const [url, name] of [
-    [PROMIEDOS_LIBERTADORES, 'Copa Libertadores'],
-    [PROMIEDOS_SUDAMERICANA, 'Copa Sudamericana'],
-  ] as [string, string][]) {
-    try {
-      const result = await scrapeStandingsPage(url, name, 'river-group');
-      if (result.rows.length > 0) {
-        console.log(`✅ Copa: ${name} | ${result.group} | ${result.rows.length} equipos`);
-        return result;
-      }
-    } catch (e) {
-      console.log(`⚠️ ${name} no disponible:`, (e as Error).message);
+function normalizeVenue(venueName: string, isHome: boolean, homeTeamId: number): string {
+  if (isHome) {
+    if (!venueName || VENUE_FIXES[venueName] === MONUMENTAL || venueName === 'River Plate') {
+      return MONUMENTAL;
     }
+    return VENUE_FIXES[venueName] ?? venueName;
   }
-  throw new Error('River no está en ninguna Copa CONMEBOL actualmente');
+  // Visitante: usar fix si existe
+  if (venueName && VENUE_FIXES[venueName]) return VENUE_FIXES[venueName];
+  // Usar venue de la API si está disponible y no es el nombre del equipo
+  if (venueName && venueName !== 'River Plate') return venueName;
+  // Fallback por ID del equipo local
+  return VENUE_BY_TEAM_ID[homeTeamId] ?? '';
 }
 
-// ─── Tabla Anual ──────────────────────────────────────────────────────────────
-async function scrapeAnualStandings(): Promise<StandingsResult> {
-  return scrapeStandingsPage(PROMIEDOS_LIGA_ANUAL, 'Tabla Anual · Liga Profesional', 'all');
+function parseFixture(fix: any): MatchData {
+  const isHome    = fix.teams?.home?.id === RIVER_ID;
+  const homeTeam  = normalizeTeamName(fix.teams?.home?.id, fix.teams?.home?.name ?? '');
+  const awayTeam  = normalizeTeamName(fix.teams?.away?.id, fix.teams?.away?.name ?? '');
+  const hScore    = fix.goals?.home;
+  const aScore    = fix.goals?.away;
+  const statusShort: string = fix.fixture?.status?.short ?? 'NS';
+  const status: MatchData['status'] =
+    statusShort === 'FT' || statusShort === 'AET' || statusShort === 'PEN' ? 'FT' :
+    statusShort === 'HT' ? 'HT' :
+    statusShort === '1H' || statusShort === '2H' || statusShort === 'ET' || statusShort === 'BT' ? 'LIVE' :
+    statusShort === 'TBD' ? 'TBD' : 'NS';
+
+  const homeTeamId: number = fix.teams?.home?.id ?? 0;
+  const rawVenue: string = fix.fixture?.venue?.name ?? '';
+  const venue = normalizeVenue(rawVenue, isHome, homeTeamId);
+
+  const competition = translateCompetition(
+    fix.league?.name ?? 'Liga Profesional',
+    fix.league?.round ?? ''
+  );
+
+  return {
+    id:            String(fix.fixture?.id ?? Date.now()),
+    homeTeam,
+    homeTeamLogo:  fix.teams?.home?.logo,
+    awayTeam,
+    awayTeamLogo:  fix.teams?.away?.logo,
+    homeScore:     typeof hScore === 'number' ? hScore : null,
+    awayScore:     typeof aScore === 'number' ? aScore : null,
+    status,
+    minute:        fix.fixture?.status?.elapsed ?? null,
+    date:          fix.fixture?.date ?? new Date().toISOString(),
+    venue,
+    competition,
+  };
 }
 
-// ─── Promiedos: partidos de River via __NEXT_DATA__ ───────────────────────────
-async function scrapePromiedosMatches(): Promise<{ next: MatchData | null; last: MatchData | null }> {
-  const res = await fetch(PROMIEDOS_RIVER, { headers: PROMIEDOS_HEADERS });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const html = await res.text();
+// Normaliza nombres de grupo de la API: "Apertura, Group B" → "Zona B", "Group H" → "Grupo H"
+function normalizeGroupName(raw: string, isLeague = true): string {
+  if (!raw) return isLeague ? 'Zona' : 'Grupo';
+  // Strip phase prefix like "Apertura, " or "Clausura, "
+  const stripped = raw.replace(/^(apertura|clausura|torneo)[,\s]+/i, '').trim();
+  // Translate "Group X" → "Zona X" (liga) or "Grupo X" (copa)
+  const translated = stripped
+    .replace(/^group\s+/i, isLeague ? 'Zona ' : 'Grupo ')
+    .replace(/^zona\s+/i, 'Zona ')
+    .replace(/^grupo\s+/i, 'Grupo ');
+  return translated || raw;
+}
+async function fetchLigaStandings(): Promise<{ zonaRiver: StandingsResult; zonaA: StandingsResult }> {
+  const data = await apiFetch(`/standings?league=${LIGA_ID}&season=${SEASON}`);
+  const standings: any[][] = data?.response?.[0]?.league?.standings ?? [];
+  if (standings.length === 0) throw new Error('Sin standings en Liga Profesional');
 
-  const nextData = extractNextData(html);
-  const games = nextData?.props?.pageProps?.data?.games;
-  if (!games) throw new Error('No se encontró games en __NEXT_DATA__');
-
-  function buildMatch(row: any, isHomeOverride?: boolean): MatchData | null {
-    const game = row.game;
-    if (!game) return null;
-
-    const vals = row.values as Array<{key: string; value: any}>;
-    const homeAway = getVal(vals, 'home_away');
-    const isHome = isHomeOverride !== undefined ? isHomeOverride : homeAway === 'L';
-
-    // teams[0] = local real, teams[1] = visitante real
-    const teams = game.teams || [];
-    if (teams.length < 2) return null;
-
-    const riverInPos0 = teams[0]?.id === 'igi' || teams[0]?.name?.toLowerCase().includes('river');
-    const opponent = riverInPos0 ? teams[1] : teams[0];
-
-    const homeTeam = isHome ? 'River Plate' : opponent.name;
-    const awayTeam = isHome ? opponent.name : 'River Plate';
-
-    // Score
-    let homeScore: number | null = null;
-    let awayScore: number | null = null;
-    if (game.scores && Array.isArray(game.scores) && game.scores.length >= 2) {
-      if (riverInPos0) {
-        // River es local real → scores[0]=River, scores[1]=rival
-        homeScore = isHome ? game.scores[0] : game.scores[1];
-        awayScore = isHome ? game.scores[1] : game.scores[0];
-      } else {
-        // River es visitante real → scores[0]=rival, scores[1]=River
-        homeScore = isHome ? game.scores[1] : game.scores[0];
-        awayScore = isHome ? game.scores[0] : game.scores[1];
-      }
-    }
-
-    // Fecha: "05-04-2026 14:00" → ISO
-    let dateStr = new Date().toISOString();
-    try {
-      const [datePart, timePart] = (game.start_time || '').split(' ');
-      const [d, mo, y] = datePart.split('-');
-      dateStr = new Date(`${y}-${mo}-${d}T${timePart}:00-03:00`).toISOString();
-    } catch { /* usar fecha actual */ }
-
-    const isPlayed = game.winner !== -1 && game.winner !== undefined;
-
-    return {
-      id: game.id || `promiedos-${Date.now()}`,
-      homeTeam,
-      awayTeam,
-      homeScore: isPlayed ? homeScore : null,
-      awayScore: isPlayed ? awayScore : null,
-      status: isPlayed ? 'FT' : 'NS',
-      minute: null,
-      date: dateStr,
-      venue: resolveVenue(isHome, opponent.name || ''),
-      competition: game.stage_round_name || 'Liga Profesional',
-    };
-  }
-
-  // Próximo partido — primer row de games.next
-  let nextMatch: MatchData | null = null;
-  const nextRows = games.next?.rows || [];
-  for (const row of nextRows) {
-    const m = buildMatch(row);
-    if (m) { nextMatch = m; break; }
-  }
-
-  // Último resultado — último row de games.last con winner !== -1
-  let lastMatch: MatchData | null = null;
-  const lastRows = (games.last?.rows || []) as any[];
-
-  // Filtrar solo Liga Profesional y ordenar por fecha descendente
-  const playedRows = lastRows.filter((row: any) => {
-    const game = row.game;
-    return game && game.winner !== -1 && game.winner !== undefined;
+  const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const zones = standings.map((zone, idx) => {
+    const raw = zone[0]?.group?.trim() || '';
+    const groupName = normalizeGroupName(raw, true) || `Zona ${LETTERS[idx]}`;
+    const rows = zone.map(parseStandingEntry);
+    return { groupName, rows };
   });
 
-  // Ordenar por fecha — más reciente primero
-  playedRows.sort((a: any, b: any) => {
-    const parseDate = (r: any) => {
-      try {
-        const [datePart, timePart] = (r.game?.start_time || '').split(' ');
-        const [d, mo, y] = datePart.split('-');
-        return new Date(`${y}-${mo}-${d}T${timePart || '00:00'}:00`).getTime();
-      } catch { return 0; }
-    };
-    return parseDate(b) - parseDate(a);
-  });
+  const zonaAData = zones[0];
+  const zonaA: StandingsResult = {
+    rows: zonaAData.rows,
+    label: `${zonaAData.groupName} · Liga Profesional`,
+    competition: 'Liga Profesional',
+    group: zonaAData.groupName,
+  };
 
-  if (playedRows.length > 0) {
-    lastMatch = buildMatch(playedRows[0]);
-  }
+  const riverZoneData = zones.find(z => z.rows.some(r => r.isRiver)) ?? zonaAData;
+  const zonaRiver: StandingsResult = {
+    rows: riverZoneData.rows,
+    label: `${riverZoneData.groupName} · Liga Profesional`,
+    competition: 'Liga Profesional',
+    group: riverZoneData.groupName,
+  };
 
-  return { next: nextMatch, last: lastMatch };
+  return { zonaRiver, zonaA };
 }
 
-// ─── getStandings ─────────────────────────────────────────────────────────────
-export async function getStandings(): Promise<StandingsRow[]> {
-  const cacheKey = `standings-${ARGENTINA_LEAGUE_ID}`;
-  const cached = getCached(cacheKey, 30) as StandingsRow[] | null;
-  if (cached) return cached;
+// ─── Copa CONMEBOL — standings calculados desde fixtures de la API ─────────────
+// La API Pro tiene fixtures pero no standings para copas internacionales.
+// Calculamos la tabla a partir de los resultados de los partidos.
+async function fetchCopaStandings(): Promise<StandingsResult> {
+  const copas = [
+    { id: SUDAMERICANA_ID, name: 'Copa Sudamericana' },
+    { id: LIBERTADORES_ID, name: 'Copa Libertadores' },
+  ];
 
-  try {
-    const standings = await scrapePromiedosStandings();
-    console.log('✅ Tabla Promiedos:', standings.length, 'equipos. River pos', standings.find(r => r.isRiver)?.position, 'pts', standings.find(r => r.isRiver)?.points);
-    setCache(cacheKey, standings);
-    return standings;
-  } catch (err) {
-    console.log('⚠️ Promiedos tabla falló:', (err as Error).message);
-  }
+  const errors: string[] = [];
 
-  return getMockStandings();
-}
+  for (const copa of copas) {
+    try {
+      // Paso 1: traer fixtures de River en esta copa
+      const riverData = await apiFetch(
+        `/fixtures?league=${copa.id}&season=${SEASON}&team=${RIVER_ID}`
+      );
 
-// ─── getNextMatch ─────────────────────────────────────────────────────────────
-export async function getNextMatch(): Promise<MatchData | null> {
-  const cacheKey = `next-match-${RIVER_PLATE_ID}`;
-  const cached = getCached(cacheKey, 60) as MatchData | null;
-  if (cached) return cached;
+      if (riverData?.errors && Object.keys(riverData.errors).length > 0) {
+        errors.push(`${copa.name}: ${JSON.stringify(riverData.errors)}`);
+        continue;
+      }
 
-  try {
-    const { next } = await scrapePromiedosMatches();
-    if (next) {
-      console.log('✅ Próximo partido:', next.homeTeam, 'vs', next.awayTeam, next.date);
-      setCache(cacheKey, next);
-      return next;
-    }
-  } catch (err) {
-    console.log('⚠️ Próximo partido falló:', (err as Error).message);
-  }
+      const riverFixtures: any[] = riverData?.response ?? [];
+      const groupFixtures = riverFixtures.filter((f: any) =>
+        (f.league?.round ?? '').toLowerCase().includes('group')
+      );
 
-  return getMockNextMatch();
-}
+      if (groupFixtures.length === 0) {
+        errors.push(`${copa.name}: sin fixtures de fase de grupos para River`);
+        continue;
+      }
 
-// ─── getLastResult ────────────────────────────────────────────────────────────
-export async function getLastResult(): Promise<MatchData | null> {
-  const cacheKey = `last-result-${RIVER_PLATE_ID}`;
-  const cached = getCached(cacheKey, 120) as MatchData | null;
-  if (cached) return cached;
+      // Paso 2: identificar los 4 equipos del grupo y sus logos
+      const teamMap = new Map<number, { name: string; logo: string }>();
+      teamMap.set(RIVER_ID, {
+        name: normalizeTeamName(RIVER_ID, 'River Plate'),
+        logo: `https://media.api-sports.io/football/teams/${RIVER_ID}.png`,
+      });
 
-  try {
-    const { last } = await scrapePromiedosMatches();
-    if (last) {
-      console.log('✅ Último resultado:', last.homeTeam, last.homeScore, '-', last.awayScore, last.awayTeam, '|', last.date);
-      setCache(cacheKey, last);
-      return last;
-    }
-  } catch (err) {
-    console.log('⚠️ Último resultado falló:', (err as Error).message);
-  }
+      const opponentIds = new Set<number>();
+      for (const fix of groupFixtures) {
+        const homeId: number = fix.teams?.home?.id;
+        const awayId: number = fix.teams?.away?.id;
+        if (homeId) teamMap.set(homeId, {
+          name: normalizeTeamName(homeId, fix.teams.home.name),
+          logo: fix.teams.home.logo,
+        });
+        if (awayId) teamMap.set(awayId, {
+          name: normalizeTeamName(awayId, fix.teams.away.name),
+          logo: fix.teams.away.logo,
+        });
+        if (homeId && homeId !== RIVER_ID) opponentIds.add(homeId);
+        if (awayId && awayId !== RIVER_ID) opponentIds.add(awayId);
+      }
 
-  return getMockLastResult();
-}
+      // Paso 3: traer fixtures de UN oponente para obtener partidos entre rivales
+      // (ej: Blooming vs Bragantino, Blooming vs Carabobo)
+      const allFixtures = [...groupFixtures];
+      const seenIds = new Set(groupFixtures.map((f: any) => f.fixture?.id));
+      const groupTeamIds = [RIVER_ID, ...opponentIds];
 
-
-// ─── getAllMatches — todos los próximos y resultados ──────────────────────────
-export async function getAllMatches(): Promise<{
-  upcoming: MatchData[];
-  results: MatchData[];
-}> {
-  const cacheKey = `all-matches-${RIVER_PLATE_ID}`;
-  const cached = getCached(cacheKey, 60) as { upcoming: MatchData[]; results: MatchData[] } | null;
-  if (cached) return cached;
-
-  try {
-    const res = await fetch(PROMIEDOS_RIVER, { headers: PROMIEDOS_HEADERS });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const html = await res.text();
-    const nextData = extractNextData(html);
-    const games = nextData?.props?.pageProps?.data?.games;
-    if (!games) throw new Error('No games data');
-
-    function buildRow(row: any): MatchData | null {
-      const game = row.game;
-      if (!game) return null;
-      const vals = row.values as Array<{key: string; value: any}>;
-      const homeAway = (vals.find((v: any) => v.key === 'home_away')?.value) || 'L';
-      const isHome = homeAway === 'L';
-      const teams = game.teams || [];
-      if (teams.length < 2) return null;
-      const riverInPos0 = teams[0]?.id === 'igi' || teams[0]?.name?.toLowerCase().includes('river');
-      const opponent = riverInPos0 ? teams[1] : teams[0];
-      const homeTeam = isHome ? 'River Plate' : opponent.name;
-      const awayTeam = isHome ? opponent.name : 'River Plate';
-      let homeScore: number | null = null;
-      let awayScore: number | null = null;
-      if (game.scores && Array.isArray(game.scores) && game.scores.length >= 2) {
-        if (riverInPos0) {
-          homeScore = isHome ? game.scores[0] : game.scores[1];
-          awayScore = isHome ? game.scores[1] : game.scores[0];
-        } else {
-          homeScore = isHome ? game.scores[1] : game.scores[0];
-          awayScore = isHome ? game.scores[0] : game.scores[1];
+      if (opponentIds.size > 0) {
+        const [firstOpp] = opponentIds;
+        const oppData = await apiFetch(
+          `/fixtures?league=${copa.id}&season=${SEASON}&team=${firstOpp}`
+        );
+        const oppFixtures: any[] = oppData?.response ?? [];
+        for (const fix of oppFixtures) {
+          const fid = fix.fixture?.id;
+          const homeId: number = fix.teams?.home?.id;
+          const awayId: number = fix.teams?.away?.id;
+          // Solo agregar si es fase de grupos Y entre equipos del mismo grupo Y no duplicado
+          if (
+            !seenIds.has(fid) &&
+            (fix.league?.round ?? '').toLowerCase().includes('group') &&
+            groupTeamIds.includes(homeId) &&
+            groupTeamIds.includes(awayId)
+          ) {
+            allFixtures.push(fix);
+            seenIds.add(fid);
+          }
         }
       }
-      let dateStr = new Date().toISOString();
-      try {
-        const [datePart, timePart] = (game.start_time || '').split(' ');
-        const [d, mo, y] = datePart.split('-');
-        dateStr = new Date(`${y}-${mo}-${d}T${timePart}:00-03:00`).toISOString();
-      } catch { /* use current */ }
-      const isPlayed = game.winner !== -1 && game.winner !== undefined;
+
+      // Paso 4: calcular standings desde los resultados
+      const standingsMap = new Map<number, StandingsRow>();
+      for (const id of groupTeamIds) {
+        const info = teamMap.get(id)!;
+        standingsMap.set(id, {
+          position: 0,
+          team: info.name,
+          teamLogo: info.logo,
+          teamId: id,
+          played: 0, wins: 0, draws: 0, losses: 0,
+          goalsFor: 0, goalsAgainst: 0, goalDiff: 0,
+          points: 0, form: [],
+          isRiver: id === RIVER_ID,
+        });
+      }
+
+      const formMap = new Map<number, string[]>();
+      for (const id of groupTeamIds) formMap.set(id, []);
+
+      for (const fix of allFixtures) {
+        const homeId: number = fix.teams?.home?.id;
+        const awayId: number = fix.teams?.away?.id;
+        const hGoals: number | null = fix.goals?.home;
+        const aGoals: number | null = fix.goals?.away;
+        const statusShort: string = fix.fixture?.status?.short ?? 'NS';
+        const isFinished = ['FT', 'AET', 'PEN'].includes(statusShort);
+
+        if (!isFinished || hGoals === null || aGoals === null) continue;
+
+        const home = standingsMap.get(homeId);
+        const away = standingsMap.get(awayId);
+        if (!home || !away) continue;
+
+        home.played++; away.played++;
+        home.goalsFor += hGoals; home.goalsAgainst += aGoals;
+        away.goalsFor += aGoals; away.goalsAgainst += hGoals;
+        home.goalDiff = home.goalsFor - home.goalsAgainst;
+        away.goalDiff = away.goalsFor - away.goalsAgainst;
+
+        if (hGoals > aGoals) {
+          home.wins++; home.points += 3;
+          formMap.get(homeId)!.push('W'); formMap.get(awayId)!.push('L');
+          away.losses++;
+        } else if (aGoals > hGoals) {
+          away.wins++; away.points += 3;
+          formMap.get(awayId)!.push('W'); formMap.get(homeId)!.push('L');
+          home.losses++;
+        } else {
+          home.draws++; home.points++;
+          away.draws++; away.points++;
+          formMap.get(homeId)!.push('D'); formMap.get(awayId)!.push('D');
+        }
+      }
+
+      // Asignar form y ordenar
+      const rows = [...standingsMap.values()]
+        .map(row => ({ ...row, form: (formMap.get(row.teamId) ?? []).slice(-5) }))
+        .sort((a, b) => b.points - a.points || b.goalDiff - a.goalDiff || b.goalsFor - a.goalsFor)
+        .map((row, idx) => ({ ...row, position: idx + 1 }));
+
+      // Determinar nombre del grupo (contar cuántos grupos hay antes del de River)
+      // La API no lo expone directamente; usamos la posición del grupo dentro de la copa
+      // Para Sudamericana 2026: Grupo H (River en el 8vo grupo = H)
+      const groupName = 'Grupo H'; // Se actualizará dinámicamente si la API lo provee en el futuro
+
+      console.log(`✅ ${copa.name} | ${groupName} | ${rows.length} equipos (calculado desde fixtures)`);
       return {
-        id: game.id || `promiedos-${Date.now()}`,
-        homeTeam, awayTeam,
-        homeScore: isPlayed ? homeScore : null,
-        awayScore: isPlayed ? awayScore : null,
-        status: isPlayed ? 'FT' : 'NS',
-        minute: null, date: dateStr,
-        venue: resolveVenue(isHome, opponent.name || ''),
-        competition: game.stage_round_name || 'Liga Profesional',
+        rows,
+        label: `${groupName} · ${copa.name}`,
+        competition: copa.name,
+        group: groupName,
       };
+
+    } catch (e) {
+      errors.push(`${copa.name}: ${(e as Error).message}`);
     }
-
-    const upcoming: MatchData[] = (games.next?.rows || []).map(buildRow).filter(Boolean) as MatchData[];
-
-    const resultRows = [...(games.last?.rows || [])].filter((r: any) =>
-      r.game?.winner !== -1 && r.game?.winner !== undefined
-    );
-    resultRows.sort((a: any, b: any) => {
-      const parseDate = (r: any) => {
-        try {
-          const [dp, tp] = (r.game?.start_time || '').split(' ');
-          const [d, mo, y] = dp.split('-');
-          return new Date(`${y}-${mo}-${d}T${tp || '00:00'}:00`).getTime();
-        } catch { return 0; }
-      };
-      return parseDate(b) - parseDate(a);
-    });
-    const results: MatchData[] = resultRows.map(buildRow).filter(Boolean) as MatchData[];
-
-    const data = { upcoming, results };
-    setCache(cacheKey, data);
-    console.log(`✅ getAllMatches: ${upcoming.length} próximos, ${results.length} resultados`);
-    return data;
-  } catch (err) {
-    console.log('⚠️ getAllMatches falló:', (err as Error).message);
-    return { upcoming: [], results: [] };
   }
+
+  throw new Error(`River no está en ninguna Copa CONMEBOL. ${errors.join(' / ')}`);
 }
 
-// ─── getZonaStandings — zona de River en la Liga ─────────────────────────────
+// ─── Partidos de River ─────────────────────────────────────────────────────────
+async function fetchRiverFixtures(): Promise<{ upcoming: MatchData[]; results: MatchData[] }> {
+  const [nextData, lastData] = await Promise.all([
+    apiFetch(`/fixtures?team=${RIVER_ID}&season=${SEASON}&next=20`),
+    apiFetch(`/fixtures?team=${RIVER_ID}&season=${SEASON}&last=20`),
+  ]);
+
+  const upcoming: MatchData[] = (nextData?.response ?? [])
+    .map(parseFixture)
+    .sort((a: MatchData, b: MatchData) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+  const results: MatchData[] = (lastData?.response ?? [])
+    .map(parseFixture)
+    .filter((m: MatchData) => m.status === 'FT')
+    .sort((a: MatchData, b: MatchData) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  return { upcoming, results };
+}
+
+// ─── Exports públicos (con caché) ─────────────────────────────────────────────
 export async function getZonaStandings(): Promise<StandingsResult> {
-  const cacheKey = 'standings-zona';
-  const cached = getCached(cacheKey, 30) as StandingsResult | null;
+  const key = `standings-zona-river-${SEASON}`;
+  const cached = getCached(key, 30) as StandingsResult | null;
   if (cached) return cached;
   try {
-    const result = await scrapeStandingsPage(PROMIEDOS_LIGA, 'Liga Profesional', 'river-group');
-    console.log(`✅ Zona: ${result.group} | ${result.rows.length} equipos`);
-    setCache(cacheKey, result);
-    return result;
+    const { zonaRiver } = await fetchLigaStandings();
+    setCache(key, zonaRiver);
+    return zonaRiver;
   } catch (err) {
-    console.log('⚠️ Zona standings falló:', (err as Error).message);
-    const mock = getMockStandings();
-    return { rows: mock, label: 'Zona A · Liga Profesional', competition: 'Liga Profesional', group: 'Zona A' };
+    console.log('⚠️ Zona River falló:', (err as Error).message);
+    return { rows: getMockStandings(), label: 'Zona B · Liga Profesional', competition: 'Liga Profesional', group: 'Zona B' };
   }
 }
 
-// ─── getAnualStandings — tabla acumulada del año ──────────────────────────────
-export async function getAnualStandings(): Promise<StandingsResult> {
-  const cacheKey = 'standings-anual';
-  const cached = getCached(cacheKey, 60) as StandingsResult | null;
+export async function getZonaAStandings(): Promise<StandingsResult> {
+  const key = `standings-zona-a-${SEASON}`;
+  const cached = getCached(key, 30) as StandingsResult | null;
   if (cached) return cached;
   try {
-    const result = await scrapeAnualStandings();
-    console.log(`✅ Anual: ${result.rows.length} equipos`);
-    setCache(cacheKey, result);
-    return result;
+    const { zonaA } = await fetchLigaStandings();
+    setCache(key, zonaA);
+    return zonaA;
   } catch (err) {
-    console.log('⚠️ Anual standings falló:', (err as Error).message);
-    return { rows: [], label: 'Tabla Anual · Liga Profesional', competition: 'Liga Profesional', group: '' };
+    console.log('⚠️ Zona A falló:', (err as Error).message);
+    return { rows: [], label: 'Zona A · Liga Profesional', competition: 'Liga Profesional', group: 'Zona A' };
   }
 }
 
-// ─── getCopaStandings — auto-detecta Libertadores o Sudamericana ──────────────
 export async function getCopaStandings(): Promise<StandingsResult | null> {
-  const cacheKey = 'standings-copa';
-  const cached = getCached(cacheKey, 60) as StandingsResult | null;
+  const key = `standings-copa-${SEASON}`;
+  const cached = getCached(key, 60) as StandingsResult | null;
   if (cached) return cached;
   try {
-    const result = await scrapeCopaStandings();
-    setCache(cacheKey, result);
+    const result = await fetchCopaStandings();
+    setCache(key, result);
     return result;
   } catch (err) {
     console.log('⚠️ Copa standings falló:', (err as Error).message);
@@ -615,20 +559,92 @@ export async function getCopaStandings(): Promise<StandingsResult | null> {
   }
 }
 
-// ─── Mocks ────────────────────────────────────────────────────────────────────
+// Backward compat: getStandings devuelve la zona de River
+export async function getStandings(): Promise<StandingsRow[]> {
+  const result = await getZonaStandings();
+  return result.rows;
+}
+
+export async function getNextMatch(): Promise<MatchData | null> {
+  const key = `next-match-${RIVER_ID}-${SEASON}`;
+  const cached = getCached(key, 60) as MatchData | null;
+  if (cached) return cached;
+  try {
+    const data = await apiFetch(`/fixtures?team=${RIVER_ID}&season=${SEASON}&next=1`);
+    const fix = data?.response?.[0];
+    if (!fix) return getMockNextMatch();
+    const match = parseFixture(fix);
+    setCache(key, match);
+    return match;
+  } catch (err) {
+    console.log('⚠️ Next match falló:', (err as Error).message);
+    return getMockNextMatch();
+  }
+}
+
+export async function getLastResult(): Promise<MatchData | null> {
+  const key = `last-result-${RIVER_ID}-${SEASON}`;
+  const cached = getCached(key, 120) as MatchData | null;
+  if (cached) return cached;
+  try {
+    const data = await apiFetch(`/fixtures?team=${RIVER_ID}&season=${SEASON}&last=1`);
+    const fix = data?.response?.[0];
+    if (!fix) return getMockLastResult();
+    const match = parseFixture(fix);
+    setCache(key, match);
+    return match;
+  } catch (err) {
+    console.log('⚠️ Last result falló:', (err as Error).message);
+    return getMockLastResult();
+  }
+}
+
+export async function getAllMatches(): Promise<{ upcoming: MatchData[]; results: MatchData[] }> {
+  const key = `all-matches-${RIVER_ID}-${SEASON}`;
+  const cached = getCached(key, 60) as { upcoming: MatchData[]; results: MatchData[] } | null;
+  if (cached) return cached;
+  try {
+    const data = await fetchRiverFixtures();
+    setCache(key, data);
+    console.log(`✅ getAllMatches: ${data.upcoming.length} próximos, ${data.results.length} resultados`);
+    return data;
+  } catch (err) {
+    console.log('⚠️ getAllMatches falló:', (err as Error).message);
+    return { upcoming: [], results: [] };
+  }
+}
+
+// ─── Mocks (fallback si la API falla) ─────────────────────────────────────────
 function getMockStandings(): StandingsRow[] {
   return [
-    { position:1,team:'Independiente Rivadavia',teamLogo:'',teamId:0,played:11,wins:7,draws:2,losses:2,goalsFor:18,goalsAgainst:12,goalDiff:6,points:23,form:['W','D','L','L','W'],isRiver:false },
-    { position:2,team:'River Plate',teamLogo:'',teamId:26,played:11,wins:6,draws:2,losses:3,goalsFor:14,goalsAgainst:9,goalDiff:5,points:20,form:['W','W','L','W','D'],isRiver:true },
-    { position:3,team:'Belgrano',teamLogo:'',teamId:0,played:11,wins:5,draws:4,losses:2,goalsFor:12,goalsAgainst:9,goalDiff:3,points:19,form:['L','W','D','W','L'],isRiver:false },
+    { position:1, team:'Ind. Rivadavia', teamLogo:'', teamId:0, played:11, wins:7, draws:2, losses:2, goalsFor:18, goalsAgainst:12, goalDiff:6, points:23, form:['W','D','L','L','W'], isRiver:false },
+    { position:2, team:'River Plate',    teamLogo:'', teamId:435, played:11, wins:6, draws:2, losses:3, goalsFor:14, goalsAgainst:9, goalDiff:5, points:20, form:['W','W','L','W','D'], isRiver:true },
+    { position:3, team:'Belgrano',       teamLogo:'', teamId:0, played:11, wins:5, draws:4, losses:2, goalsFor:12, goalsAgainst:9, goalDiff:3, points:19, form:['L','W','D','W','L'], isRiver:false },
   ];
 }
 
 function getMockNextMatch(): MatchData {
-  const d = new Date('2026-04-05T14:00:00-03:00');
-  return { id:'mock-next',homeTeam:'River Plate',awayTeam:'Belgrano',homeScore:null,awayScore:null,status:'NS',minute:null,date:d.toISOString(),venue:'Estadio Más Monumental',competition:'Liga Profesional Fecha 13' };
+  return {
+    id: 'mock-next',
+    homeTeam: 'River Plate',
+    awayTeam: 'Belgrano',
+    homeScore: null, awayScore: null,
+    status: 'NS', minute: null,
+    date: new Date('2026-04-05T17:00:00Z').toISOString(),
+    venue: 'Estadio Mâs Monumental',
+    competition: 'Liga Profesional · Fecha 13',
+  };
 }
 
 function getMockLastResult(): MatchData {
-  return { id:'mock-last',homeTeam:'Estudiantes RC',awayTeam:'River Plate',homeScore:0,awayScore:2,status:'FT',minute:null,date:new Date('2026-03-22T17:45:00-03:00').toISOString(),venue:'',competition:'Liga Profesional' };
+  return {
+    id: 'mock-last',
+    homeTeam: 'Estudiantes RC',
+    awayTeam: 'River Plate',
+    homeScore: 0, awayScore: 2,
+    status: 'FT', minute: null,
+    date: new Date('2026-03-22T20:45:00Z').toISOString(),
+    venue: 'Estadio Jorge Luis Hirschi',
+    competition: 'Liga Profesional · Fecha 12',
+  };
 }

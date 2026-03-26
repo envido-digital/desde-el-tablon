@@ -41,7 +41,9 @@ export interface StandingsResult {
 export interface MatchData {
   id: string;
   homeTeam: string;
+  homeTeamLogo?: string;
   awayTeam: string;
+  awayTeamLogo?: string;
   homeScore: number | null;
   awayScore: number | null;
   status: 'NS' | 'LIVE' | 'FT' | 'HT' | 'TBD';
@@ -97,8 +99,8 @@ export async function getZonaStandings(): Promise<StandingsResult | null> {
   return apiFetch('/api/sports/standings-zona');
 }
 
-export async function getAnualStandings(): Promise<StandingsResult | null> {
-  return apiFetch('/api/sports/standings-anual');
+export async function getZonaAStandings(): Promise<StandingsResult | null> {
+  return apiFetch('/api/sports/standings-zona-a');
 }
 
 export async function getCopaStandings(): Promise<StandingsResult | null> {

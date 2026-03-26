@@ -1,0 +1,11 @@
+{
+  "name": "desde-el-tablon",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "cd apps/api && node dist/index.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

@@ -1,14 +1,16 @@
 ---
-import { getStandings, getCopaStandings, getNextMatch, getLastResult } from '../lib/api';
+import { getZonaStandings, getCopaStandings, getNextMatch, getLastResult } from '../lib/api';
 import { TeamLogo } from './TeamLogo';
 
-const standings = await getStandings();
-const copaResult = await getCopaStandings();
-const nextMatch = await getNextMatch();
-const lastResult = await getLastResult();
+const zonaResult  = await getZonaStandings();
+const copaResult  = await getCopaStandings();
+const nextMatch   = await getNextMatch();
+const lastResult  = await getLastResult();
 
-const top8 = standings?.slice(0, 8) ?? [];
+// Sidebar: top 8 de la zona de River + top 6 Copa
+const top8     = zonaResult?.rows?.slice(0, 8) ?? [];
 const copaRows = copaResult?.rows?.slice(0, 6) ?? [];
+const zonaLabel = zonaResult?.group || 'Zona de River';
 const copaLabel = copaResult?.group || 'Copa CONMEBOL';
 const copaComp  = copaResult?.competition || '';
 
@@ -20,13 +22,10 @@ function fmtDate(d: string) {
   });
 }
 function fmtTime(d: string) {
-  const date = new Date(d);
-  const parts = new Intl.DateTimeFormat('es-AR', {
-    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TZ
-  }).formatToParts(date);
-  const h = parts.find(p => p.type === 'hour')?.value ?? '00';
-  const m = parts.find(p => p.type === 'minute')?.value ?? '00';
-  return `${h}:${m}`;
+  // en-GB always returns 24h format (HH:MM) regardless of OS locale settings
+  return new Date(d).toLocaleTimeString('en-GB', {
+    hour: '2-digit', minute: '2-digit', timeZone: TZ
+  });
 }
 function fmtDateLong(d: string) {
   return new Date(d).toLocaleDateString('es-AR', {
@@ -55,9 +54,9 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
       <div class="match-comp-badge">{nextMatch.competition}</div>
       <div class="match-teams-row">
         <div class="match-team-block">
-          <TeamLogo team={nextMatch.homeTeam} size={36} client:load />
+          <TeamLogo team={nextMatch.homeTeam} logoUrl={nextMatch.homeTeamLogo || undefined} size={36} client:load />
           <span class:list={['team-label', { 'team-label--river': nextMatch.homeTeam.includes('River') }]}>
-            {nextMatch.homeTeam === 'River Plate' ? 'River' : nextMatch.homeTeam.split(' ').slice(0,2).join(' ')}
+            {nextMatch.homeTeam}
           </span>
         </div>
         <div class="match-vs-block">
@@ -68,9 +67,9 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
           </div>
         </div>
         <div class="match-team-block match-team-block--right">
-          <TeamLogo team={nextMatch.awayTeam} size={36} client:load />
+          <TeamLogo team={nextMatch.awayTeam} logoUrl={nextMatch.awayTeamLogo || undefined} size={36} client:load />
           <span class:list={['team-label', { 'team-label--river': nextMatch.awayTeam.includes('River') }]}>
-            {nextMatch.awayTeam === 'River Plate' ? 'River' : nextMatch.awayTeam.split(' ').slice(0,2).join(' ')}
+            {nextMatch.awayTeam}
           </span>
         </div>
       </div>
@@ -88,9 +87,9 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
       <div class="match-comp-badge">{lastResult.competition}</div>
       <div class="result-teams-row">
         <div class="match-team-block">
-          <TeamLogo team={lastResult.homeTeam} size={32} client:load />
+          <TeamLogo team={lastResult.homeTeam} logoUrl={lastResult.homeTeamLogo || undefined} size={32} client:load />
           <span class:list={['team-label', { 'team-label--river': lastResult.homeTeam.includes('River') }]}>
-            {lastResult.homeTeam === 'River Plate' ? 'River' : lastResult.homeTeam.split(' ').slice(0,2).join(' ')}
+            {lastResult.homeTeam}
           </span>
         </div>
         <div class="result-score-block">
@@ -110,46 +109,12 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
           <div class="result-date">{fmtDateLong(lastResult.date)}</div>
         </div>
         <div class="match-team-block match-team-block--right">
-          <TeamLogo team={lastResult.awayTeam} size={32} client:load />
+          <TeamLogo team={lastResult.awayTeam} logoUrl={lastResult.awayTeamLogo || undefined} size={32} client:load />
           <span class:list={['team-label', { 'team-label--river': lastResult.awayTeam.includes('River') }]}>
-            {lastResult.awayTeam === 'River Plate' ? 'River' : lastResult.awayTeam.split(' ').slice(0,2).join(' ')}
+            {lastResult.awayTeam}
           </span>
         </div>
       </div>
-    </div>
-  )}
-
-  <!-- ── Copa CONMEBOL tabla ─────────────────────────────────────────── -->
-  {copaRows.length > 0 && (
-    <div class="widget">
-      <div class="widget-title-row">
-        <div class="widget-title-stack">
-          <span class="widget-title-main">{copaLabel}</span>
-          <span class="widget-title-sub">{copaComp}</span>
-        </div>
-        <a href="/tabla" class="widget-more">Ver →</a>
-      </div>
-      <table class="standings-table" role="table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th colspan="2">Equipo</th>
-            <th title="Partidos jugados">PJ</th>
-            <th title="Puntos">Pts</th>
-          </tr>
-        </thead>
-        <tbody>
-          {copaRows.map(row => (
-            <tr class:list={[{ 'standings-row--river': row.isRiver }]}>
-              <td class="standings-pos">{row.position}</td>
-              <td class="standings-logo"><TeamLogo team={row.team} size={18} client:load /></td>
-              <td class="standings-team">{row.team.replace('River Plate', 'River').replace(' Rivadavia',' Riv.').replace(' Juniors','').replace(' Central','').replace(' Junín','')}</td>
-              <td>{row.played}</td>
-              <td class="standings-pts">{row.points}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
   )}
 
@@ -158,8 +123,8 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
     <div class="widget">
       <div class="widget-title-row">
         <div class="widget-title-stack">
-          <span class="widget-title-main">Tabla · Liga Profesional</span>
-          <span class="widget-title-sub">Zona de River</span>
+          <span class="widget-title-main">Liga Profesional</span>
+          <span class="widget-title-sub">{zonaLabel}</span>
         </div>
         <a href="/tabla" class="widget-more">Ver completa →</a>
       </div>
@@ -176,8 +141,42 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
           {top8.map(row => (
             <tr class:list={[{ 'standings-row--river': row.isRiver }]}>
               <td class="standings-pos">{row.position}</td>
-              <td class="standings-logo"><TeamLogo team={row.team} size={18} client:load /></td>
-              <td class="standings-team">{row.team.replace('River Plate', 'River').replace(' Rivadavia',' Riv.').replace(' Juniors','').replace(' Central','').replace(' Junín','')}</td>
+              <td class="standings-logo"><TeamLogo team={row.team} logoUrl={row.teamLogo || undefined} size={18} client:load /></td>
+              <td class="standings-team">{row.team}</td>
+              <td>{row.played}</td>
+              <td class="standings-pts">{row.points}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+
+  <!-- ── Copa CONMEBOL Sudamericana tabla ────────────────────────────── -->
+  {copaRows.length > 0 && (
+    <div class="widget">
+      <div class="widget-title-row">
+        <div class="widget-title-stack">
+          <span class="widget-title-main">Copa CONMEBOL Sudamericana</span>
+          <span class="widget-title-sub">{copaLabel}</span>
+        </div>
+        <a href="/tabla" class="widget-more">Ver →</a>
+      </div>
+      <table class="standings-table" role="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th colspan="2">Equipo</th>
+            <th title="Partidos jugados">PJ</th>
+            <th title="Puntos">Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {copaRows.map(row => (
+            <tr class:list={[{ 'standings-row--river': row.isRiver }]}>
+              <td class="standings-pos">{row.position}</td>
+              <td class="standings-logo"><TeamLogo team={row.team} logoUrl={row.teamLogo || undefined} size={18} client:load /></td>
+              <td class="standings-team">{row.team}</td>
               <td>{row.played}</td>
               <td class="standings-pts">{row.points}</td>
             </tr>
@@ -503,26 +502,30 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
     text-align: center;
     border-bottom: 1px solid var(--color-border);
   }
+  .standings-table thead th { text-align: center; }
   .standings-table thead th:nth-child(3) { text-align: left; }
   .standings-table td {
     padding: 0.45rem 0.3rem;
     text-align: center;
     border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
   }
   .standings-table tbody tr:last-child td { border-bottom: none; }
   .standings-row--river { background: #fef2f2; }
-  .standings-pos { color: var(--color-text-muted); font-weight: 600; font-size: 0.72rem; width: 20px; }
-  .standings-logo { width: 22px; padding: 0.35rem 0.1rem; }
-  .standings-team {
+  .standings-pos { color: var(--color-text-muted); font-weight: 600; font-size: 0.72rem; width: 18px; white-space: nowrap; }
+  .standings-logo { width: 22px; padding: 0.3rem 0.1rem; }
+  .standings-table td.standings-team {
     text-align: left;
     font-weight: 500;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100px;
+    white-space: normal;      /* permite wrap */
+    overflow: visible;        /* no corta */
+    text-overflow: clip;      /* sin ... */
+    word-break: break-word;
+    line-height: 1.3;
+    max-width: 130px;
   }
   .standings-row--river .standings-team { color: var(--color-primary); font-weight: 700; }
-  .standings-pts { font-weight: 800; color: var(--color-text); }
+  .standings-pts { font-weight: 800; color: var(--color-text); white-space: nowrap; }
 
   /* ── Newsletter ─────────────────────────────── */
   .widget--newsletter {
