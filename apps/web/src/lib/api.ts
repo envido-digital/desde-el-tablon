@@ -58,9 +58,13 @@ async function apiFetch<T>(path: string): Promise<T | null> {
     const res = await fetch(`${API_BASE}${path}`, {
       headers: { 'Accept': 'application/json' },
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[apiFetch] ERROR ${res.status} para ${path}`);
+      return null;
+    }
     return res.json() as Promise<T>;
-  } catch {
+  } catch (e) {
+    console.error(`[apiFetch] CATCH para ${path}:`, e);
     return null;
   }
 }
