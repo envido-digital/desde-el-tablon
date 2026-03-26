@@ -10,6 +10,7 @@ export const prerender = false;
 import Layout from "../../layouts/BaseHTML.astro";
 import Header from "../../components/Header.astro";
 import Footer from "../../components/Footer.astro";
+import Sidebar from "../../components/Sidebar.astro";
 import { getArticleBySlug, getRelatedArticles } from "../../lib/api";
 
 const { slug } = Astro.params;
@@ -175,6 +176,7 @@ const sd = JSON.stringify({
 
       <!-- Sidebar -->
       <aside class="article-sidebar">
+        <Sidebar />
         {ADSENSE_PUBLISHER
           ? <div class="sidebar-ad-sticky">
               <ins class="adsbygoogle" style="display:block"
