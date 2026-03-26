@@ -462,7 +462,6 @@ function logDiscard(data: {
   problemasEditoriales: string[];
 }) {
   try {
-    const { v4: uuidv4 } = await import('uuid');
     sqlite.prepare(`
       INSERT INTO pipeline_discards
         (id, original_title, reason, writer_attempts, datos_problema, problemas_editoriales)
