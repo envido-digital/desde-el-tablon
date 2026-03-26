@@ -1,7 +1,0 @@
-{
-  "name": "desde-el-tablon-monorepo",
-  "private": true,
-  "scripts": {
-    "start": "cd apps/api && node dist/index.js"
-  }
-}
