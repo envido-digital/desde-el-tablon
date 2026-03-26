@@ -59,14 +59,20 @@ app.use(cors({
 }));
 
 // ── Rate limiting ─────────────────────────────────────────────────────────────
-// General API limit
+// General API limit — alto porque Vercel SSR hace muchas requests desde la misma IP
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,  // 15 min
-  max: 200,
+  max: 2000,
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Demasiadas solicitudes. Intentá de nuevo en 15 minutos.' },
-  skip: (req) => req.path === '/health',
+  skip: (req) => {
+    // Skip rate limiting for public read-only endpoints
+    return req.path === '/health' 
+      || req.path.startsWith('/api/articles')
+      || req.path.startsWith('/api/sports')
+      || req.path.startsWith('/api/logos');
+  },
 });
 
 // Stricter limit for auth endpoints (login, register)
