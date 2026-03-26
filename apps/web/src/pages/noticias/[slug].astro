@@ -91,12 +91,12 @@ const sd = JSON.stringify({
     {(() => {
       const imgUrl = article.featured_image?.url;
       const fallback = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Estadio_Monumental.jpg/1200px-Estadio_Monumental.jpg';
-      const src = imgUrl && !imgUrl.includes('River_Plate_escudo') ? imgUrl : fallback;
+      const src = (imgUrl && !imgUrl.includes('River_Plate_escudo') && !imgUrl.includes('escudo.svg')) ? imgUrl : fallback;
       return (
         <div class="article-hero">
           <img src={src} alt={article.titulo}
-            width="1200" height="630" loading="eager" fetchpriority="high"
-            onerror={`this.src='${fallback}'`} />
+            loading="eager" fetchpriority="high"
+            onerror="this.onerror=null;this.style.display='none';this.parentElement.style.display='none'" />
         </div>
       );
     })()}
@@ -241,7 +241,9 @@ const sd = JSON.stringify({
 </script>
 
 <style>
+  :global(html), :global(body) { overflow-x: hidden; }
   .article-page { max-width: 1280px; margin: 0 auto; }
+  .article-hero { width: 100%; overflow: hidden; }
   .article-hero img { width: 100%; max-height: 480px; object-fit: cover; display: block; }
 
   .article-container {
