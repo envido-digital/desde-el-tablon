@@ -1,4 +1,5 @@
 ---
+export const prerender = false;
 /**
  * noticias/[slug].astro
  * =====================
@@ -10,7 +11,10 @@ import Layout from "../../layouts/BaseHTML.astro";
 import { getArticleBySlug, getRelatedArticles } from "../../lib/api";
 
 const { slug } = Astro.params;
+console.log('[slug.astro] Buscando artículo:', slug);
+console.log('[slug.astro] API_BASE:', import.meta.env.PUBLIC_API_URL);
 const article = await getArticleBySlug(slug);
+console.log('[slug.astro] Artículo encontrado:', article ? 'SÍ' : 'NO');
 
 if (!article) {
   return Astro.redirect("/404");
