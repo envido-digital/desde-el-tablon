@@ -160,7 +160,7 @@ import Footer from '../components/Footer.astro';
 </BaseHTML>
 
 <script>
-  const API_BASE = 'http://localhost:3001';
+  const API_BASE = (window as any).__API_BASE__ || import.meta.env?.PUBLIC_API_URL || 'http://localhost:3001';
 
   function getToken(): string | null { return localStorage.getItem('dt-token'); }
   function setToken(t: string) { localStorage.setItem('dt-token', t); }

@@ -26,6 +26,10 @@ const fullTitle = title.includes('Desde el Tablón') ? title : `${title} | Desde
 <html lang="es-AR">
   <head>
     <meta charset="UTF-8" />
+    <!-- Inyectar API_BASE desde variable de entorno para uso en scripts cliente -->
+    <script define:vars={{ apiUrl: import.meta.env.PUBLIC_API_URL || 'http://localhost:3001' }}>
+      window.__API_BASE__ = apiUrl;
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#B91C1C" />
 

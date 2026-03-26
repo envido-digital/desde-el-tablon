@@ -73,7 +73,7 @@ import Header from '../components/Header.astro';
 </BaseHTML>
 
 <script>
-  const API_BASE = 'http://localhost:3001';
+  const API_BASE = (window as any).__API_BASE__ || import.meta.env?.PUBLIC_API_URL || 'http://localhost:3001';
 
   function log(msg: string, type: 'info' | 'success' | 'error' = 'info') {
     const logEl = document.getElementById('pipeline-log')!;
