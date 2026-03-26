@@ -104,7 +104,10 @@ export async function runPipeline(options: PublishOptions = {}): Promise<{
           continue;
         }
 
-        const featuredImage = await findFeaturedImage(generated.keywords);
+        const featuredImage = await findFeaturedImage(
+          generated.keywords,
+          rawArticles[0]?.url,   // URL del artículo fuente principal
+        );
         const importanceScore = calcImportance(group.sourceLevel, group.items.length);
 
         const articleId = saveArticle({

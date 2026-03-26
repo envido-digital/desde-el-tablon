@@ -143,6 +143,20 @@ Si el dato no está → eliminalo o escribí "según se informó" sin el número
 NUNCA inferís, promedias ni completás datos desde conocimiento previo.
 Para datos históricos sin fuente verificada: mencioná lahistoriariver.com sin inventar el dato.
 
+REGLA CRÍTICA — DATOS BIOGRÁFICOS Y CONTRACTUALES:
+Estos datos son los más frecuentemente erróneos. Para cada uno aplica la misma regla:
+- Fecha de llegada/incorporación al club → SOLO si está en las fuentes. Si no está, NO la pongas.
+- Edad del jugador → SOLO si está explícita en las fuentes. No la calcules.
+- Propietario del pase / equipo cedente → SOLO si está en las fuentes.
+- Fecha y duración del préstamo → SOLO si está en las fuentes.
+- Salary o valor de pase → SOLO si está en las fuentes como nivel 1 o 2.
+Si no tenés el dato → no lo inventes, no lo inferís del nombre del club ni de noticias anteriores.
+Escribí "el jugador" o "el mediocampista" sin añadir atributos que no puedas verificar.
+
+REGLA DE EXTENSIÓN EN FUNCIÓN DEL MATERIAL DISPONIBLE:
+Si las fuentes tienen menos de 300 palabras de contenido verificable, la nota puede ser más corta que el mínimo estándar.
+En ese caso priorizá precisión sobre extensión. Una nota de 900 palabras 100% respaldada es mejor que una de 1.500 con datos inventados.
+
 OUTPUT: SOLO JSON válido (sin backticks):
 {
   "titulo": "máx 70 chars",
@@ -182,6 +196,7 @@ Criterios de rechazo automático:
 - Dato numérico de mercado (valor de pase, salario) sin respaldo en fuente de nivel 1 o 2
 - Nota demasiado corta: actualidad <1.400 palabras, analisis <2.300 palabras, historia <1.600 palabras, mercado <1.100 palabras
 - Menos de 3 marcadores <!-- AD_SLOT --> en cualquier nota (independientemente de la extensión)
+- Dato biográfico específico no respaldado: fecha de llegada al club, equipo propietario del pase, duración del préstamo, edad exacta del jugador — si alguno de estos aparece en la nota y NO está en las fuentes, es rechazo automático
 
 Criterios para reescribir (la nota tiene buena base pero un problema solucionable):
 - 1-2 datos menores sin respaldo que se pueden eliminar sin romper la nota
@@ -362,13 +377,14 @@ export async function rewriteArticle(
       verifierResult = await callVerifier(article, sourcesText);
     } catch (err) {
       console.error(`❌ Error en verificación (intento ${writerAttempts}):`, err);
-      // If verifier fails, publish anyway (redactor constraints are still active)
+      // If verifier fails, request rewrite on first attempt, discard on second
       verifierResult = {
-        decision: 'publicar',
-        nivelConfianza: 60,
+        decision: writerAttempts < MAX_ATTEMPTS ? 'reescribir' : 'descartar',
+        nivelConfianza: 0,
         datosNoRespaldados: [],
-        problemasEditoriales: [],
-        notasAprobacion: 'Verificador no disponible — publicado con restricciones del redactor activas',
+        problemasEditoriales: ['Verificador no disponible — no se puede garantizar precisión de datos'],
+        instruccionesReescritura: 'Revisá especialmente los datos biográficos: fechas de llegada al club, edad, equipo cedente.',
+        razonDescarte: 'Verificador no disponible en ambos intentos — nota descartada por seguridad',
       };
     }
 

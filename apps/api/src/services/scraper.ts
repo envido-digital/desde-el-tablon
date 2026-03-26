@@ -114,21 +114,112 @@ export async function scrapeRSS(sourceId: string, rssUrl: string): Promise<Scrap
   }
 }
 
-// Fetch news via RSS (feeds verificados y funcionando)
-export async function fetchNewsFromSource(sourceId: string, url: string): Promise<ScrapedItem[]> {
-  const RSS_FEEDS: Record<string, string> = {
-    'clarin':   'https://www.clarin.com/rss/deportes/',
-    'infobae':  'https://www.infobae.com/arc/outboundfeeds/rss/category/deportes/?outputType=xml',
-    'ole':      'https://www.ole.com.ar/rss/futbol-argentino.xml',
-    'tycsports':'https://www.tycsports.com/rss/liga-profesional.xml',
-    'carp-oficial': 'https://www.cariverplate.com.ar/noticias',
-    'afa':      'https://www.afa.com.ar/feeds/noticias.rss',
-  };
+// RSS feeds verificados y funcionando
+const RSS_FEEDS: Record<string, string> = {
+  // Fuentes nacionales generalistas
+  'clarin':              'https://www.clarin.com/rss/deportes/',
+  'infobae':             'https://www.infobae.com/arc/outboundfeeds/rss/category/deportes/?outputType=xml',
+  'la-nacion':           'https://www.lanacion.com.ar/arc/outboundfeeds/rss/categoria/deportes/',
+  // Medios deportivos
+  'ole':                 'https://www.ole.com.ar/rss/futbol-argentino.xml',
+  'tycsports':           'https://www.tycsports.com/rss/liga-profesional.xml',
+  // Institucionales
+  'carp-oficial':        'https://www.cariverplate.com.ar/noticias',
+  'afa':                 'https://www.afa.com.ar/feeds/noticias.rss',
+  // Fan sites especializados en River (con RSS)
+  'riverdesdelatribuna': 'https://riverdesdelatribuna.com.ar/feed/',
+  'lapaginamillonaria':  'https://lapaginamillonaria.com/rss/feed',
+};
 
-  const rssUrl = RSS_FEEDS[sourceId];
-  if (rssUrl) {
-    return scrapeRSS(sourceId, rssUrl);
+// Fuentes sin RSS: scraping HTML directo
+interface HtmlScraperConfig {
+  url: string;
+  itemSelector: string;    // selector del bloque de cada nota
+  titleSelector: string;   // selector del título dentro del bloque
+  linkSelector: string;    // selector del enlace principal dentro del bloque
+  dateSelector?: string;   // selector del elemento de fecha (opcional)
+  dateAttr?: string;       // atributo donde está la fecha ISO (ej: 'datetime')
+}
+
+const HTML_SCRAPERS: Record<string, HtmlScraperConfig> = {
+  'rivernoticias': {
+    url:           'https://www.rivernoticias.com',
+    itemSelector:  '.land-see-post-item',
+    titleSelector: 'h4',
+    linkSelector:  'a[href]',
+    dateSelector:  'time',
+    dateAttr:      'datetime',
+  },
+};
+
+// Scraper HTML genérico usando cheerio
+export async function scrapeHTML(sourceId: string, config: HtmlScraperConfig): Promise<ScrapedItem[]> {
+  try {
+    const cheerio = await import('cheerio');
+    const response = await fetch(config.url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,*/*',
+        'Accept-Language': 'es-AR,es;q=0.9',
+      },
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const items: ScrapedItem[] = [];
+    const seen = new Set<string>();
+
+    $(config.itemSelector).each((_, el) => {
+      const titleEl = $(el).find(config.titleSelector).first();
+      const linkEl   = $(el).find(config.linkSelector).first();
+      const title    = titleEl.text().trim();
+      const href     = linkEl.attr('href') || '';
+
+      // Normalizar URL relativa
+      let url = href;
+      if (href && !href.startsWith('http')) {
+        const base = new URL(config.url);
+        url = new URL(href, base.origin).href;
+      }
+
+      if (!title || !url || seen.has(url)) return;
+      seen.add(url);
+
+      let publishedAt: string | undefined;
+      if (config.dateSelector) {
+        const dateEl = $(el).find(config.dateSelector).first();
+        publishedAt = config.dateAttr
+          ? (dateEl.attr(config.dateAttr) || undefined)
+          : (dateEl.text().trim() || undefined);
+      }
+
+      const relevance = calculateRelevanceScore(title, '');
+      if (relevance < 0.3) return;
+
+      items.push({ source: sourceId, title, excerpt: '', url, publishedAt });
+    });
+
+    sqlite.prepare('UPDATE news_sources SET last_scraped = CURRENT_TIMESTAMP, scrape_count = scrape_count + 1 WHERE id = ?')
+      .run(sourceId);
+
+    return items.slice(0, 20);
+  } catch (error) {
+    console.error(`Error scraping HTML ${sourceId}:`, error);
+    sqlite.prepare('UPDATE news_sources SET error_count = error_count + 1 WHERE id = ?').run(sourceId);
+    return [];
   }
+}
+
+// Fetch news via RSS o HTML según la fuente
+export async function fetchNewsFromSource(sourceId: string, url: string): Promise<ScrapedItem[]> {
+  const rssUrl = RSS_FEEDS[sourceId];
+  if (rssUrl) return scrapeRSS(sourceId, rssUrl);
+
+  const htmlConfig = HTML_SCRAPERS[sourceId];
+  if (htmlConfig) return scrapeHTML(sourceId, htmlConfig);
+
   return [];
 }
 

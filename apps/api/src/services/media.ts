@@ -1,10 +1,70 @@
 export interface MediaAsset {
   url: string;
   alt: string;
-  source: string;
-  sourceUrl: string;
+  source: string;       // nombre del medio, ej: "Clarín"
+  sourceUrl: string;    // URL del artículo fuente
   author?: string;
   license: string;
+  caption?: string;     // epígrafe para mostrar al pie de la imagen
+}
+
+// Extrae og:image del HTML de una URL fuente — primer intento siempre
+async function fetchOgImage(articleUrl: string): Promise<MediaAsset | null> {
+  if (!articleUrl) return null;
+  try {
+    const res = await fetch(articleUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'text/html',
+      },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+
+    // Solo leer los primeros 15KB — los meta tags siempre están en el <head>
+    const reader = res.body?.getReader();
+    if (!reader) return null;
+    let html = '';
+    while (html.length < 15000) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      html += new TextDecoder().decode(value);
+    }
+    reader.cancel();
+
+    // Extraer og:image
+    const imageMatch =
+      html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i);
+    if (!imageMatch?.[1]) return null;
+    const imageUrl = imageMatch[1];
+    if (!imageUrl.startsWith('http')) return null;
+
+    // Extraer alt desde og:image:alt u og:title
+    const altMatch =
+      html.match(/<meta[^>]+property=["']og:image:alt["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["']/i);
+    const alt = altMatch?.[1]?.substring(0, 120) || 'Imagen del artículo';
+
+    // Extraer nombre del sitio para el epígrafe
+    const siteMatch =
+      html.match(/<meta[^>]+property=["']og:site_name["'][^>]+content=["']([^"']+)["']/i) ||
+      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:site_name["']/i);
+    const siteName = siteMatch?.[1] || new URL(articleUrl).hostname.replace('www.', '');
+
+    console.log(`🖼️  og:image obtenida de ${siteName}: ${imageUrl.substring(0, 60)}...`);
+
+    return {
+      url: imageUrl,
+      alt,
+      source: siteName,
+      sourceUrl: articleUrl,
+      license: 'all-rights-reserved',
+      caption: `Imagen: ${siteName}`,
+    };
+  } catch {
+    return null;
+  }
 }
 
 // Search Pexels for relevant sports images
@@ -86,7 +146,13 @@ const DEFAULT_RIVER_IMAGES: MediaAsset[] = [
   },
 ];
 
-export async function findFeaturedImage(keywords: string[]): Promise<MediaAsset | null> {
+export async function findFeaturedImage(keywords: string[], sourceUrl?: string): Promise<MediaAsset | null> {
+  // 1. Intentar og:image del artículo fuente — mejor imagen, con epígrafe automático
+  if (sourceUrl) {
+    const ogImage = await fetchOgImage(sourceUrl);
+    if (ogImage) return ogImage;
+  }
+
   const query = keywords.slice(0, 3).join(' ');
 
   // Try Pexels first

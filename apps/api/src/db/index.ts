@@ -76,11 +76,21 @@ export function initDb() {
   const sourceCount = (sqlite.prepare('SELECT COUNT(*) as count FROM news_sources').get() as { count: number }).count;
   if (sourceCount === 0) {
     const ins = sqlite.prepare('INSERT OR IGNORE INTO news_sources (id,name,url,level,active,scrape_count,error_count) VALUES (?,?,?,?,1,0,0)');
-    [['carp-oficial','River Plate Oficial','https://www.cariverplate.com.ar/noticias',1],
-     ['ole','Olé','https://www.ole.com.ar/river-plate/',2],
-     ['tycsports','TyC Sports','https://www.tycsports.com/futbol/river-plate',2],
-     ['infobae','Infobae Deportes','https://www.infobae.com/deportes/river-plate/',2],
-     ['afa','AFA','https://www.afa.com.ar/es/noticias/',1]].forEach(s => ins.run(...s));
+    [
+      // ── Nivel 1: fuentes primarias / institucionales ──────────────────────
+      ['carp-oficial',        'River Plate Oficial',     'https://www.cariverplate.com.ar/noticias',      1],
+      ['afa',                 'AFA',                     'https://www.afa.com.ar/es/noticias/',           1],
+      // ── Nivel 2: medios deportivos nacionales ─────────────────────────────
+      ['ole',                 'Olé',                     'https://www.ole.com.ar/river-plate/',           2],
+      ['tycsports',           'TyC Sports',              'https://www.tycsports.com/futbol/river-plate',  2],
+      ['infobae',             'Infobae Deportes',        'https://www.infobae.com/deportes/river-plate/', 2],
+      ['clarin',              'Clarín Deportes',         'https://www.clarin.com/deportes/',              2],
+      ['la-nacion',           'La Nación Deportes',      'https://www.lanacion.com.ar/deportes/',         2],
+      // ── Nivel 3: fan sites especializados en River ────────────────────────
+      ['lapaginamillonaria',  'La Página Millonaria',    'https://lapaginamillonaria.com',                3],
+      ['riverdesdelatribuna', 'River desde la Tribuna',  'https://riverdesdelatribuna.com.ar',            3],
+      ['rivernoticias',       'River Noticias',          'https://www.rivernoticias.com',                 3],
+    ].forEach(s => ins.run(...s));
   }
 
   const badgeCount = (sqlite.prepare('SELECT COUNT(*) as count FROM badges').get() as { count: number }).count;
