@@ -141,6 +141,28 @@ app.post('/api/admin/pipeline/run', requireAdmin, async (_req, res) => {
   res.json({ success: true, stats });
 });
 
+// Debug: estado del scraper
+app.get('/api/admin/debug/scraper', requireAdmin, async (_req, res) => {
+  const { sqlite } = await import('./db/index.js');
+  const sources = sqlite.prepare('SELECT id, name, level, active, last_scraped, scrape_count, error_count FROM news_sources ORDER BY level').all();
+  const scraped = sqlite.prepare('SELECT COUNT(*) as total FROM scraped_items').get() as { total: number };
+  const unprocessed = sqlite.prepare('SELECT COUNT(*) as total FROM scraped_items WHERE processed = 0').get() as { total: number };
+  const recent = sqlite.prepare("SELECT COUNT(*) as total FROM scraped_items WHERE scraped_at > datetime('now', '-24 hours')").get() as { total: number };
+
+  // Test one RSS feed live
+  let rssTest: Record<string, unknown> = {};
+  try {
+    const Parser = (await import('rss-parser')).default;
+    const parser = new Parser({ timeout: 10000, headers: { 'User-Agent': 'Mozilla/5.0' } });
+    const feed = await parser.parseURL('https://www.ole.com.ar/rss/futbol-argentino.xml');
+    rssTest = { ok: true, items: feed.items?.length || 0, sample: feed.items?.[0]?.title };
+  } catch(e: unknown) {
+    rssTest = { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+
+  res.json({ sources, scraped_items: { total: scraped.total, unprocessed: unprocessed.total, last24h: recent.total }, rssTest });
+});
+
 app.post('/api/admin/pipeline/historical', requireAdmin, async (_req, res) => {
   const id = await generateDailyHistoricalNote();
   res.json({ success: true, articleId: id });
