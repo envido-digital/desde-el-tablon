@@ -393,18 +393,28 @@ export async function rewriteArticle(
     }
 
     // Step 2: Verify + decide
-    try {
-      verifierResult = await callVerifier(article, sourcesText);
-    } catch (err) {
-      console.error(`❌ Error en verificación (intento ${writerAttempts}):`, err);
-      // If verifier fails, publish anyway (redactor constraints are still active)
+    // En modo volume: salteamos el verifier completamente — el humano revisa
+    if (OPERATION_MODE === 'volume') {
       verifierResult = {
         decision: 'publicar',
-        nivelConfianza: 60,
+        nivelConfianza: 100,
         datosNoRespaldados: [],
         problemasEditoriales: [],
-        notasAprobacion: 'Verificador no disponible — publicado con restricciones del redactor activas',
+        notasAprobacion: 'Modo volume — aprobado sin verificación para revisión humana',
       };
+    } else {
+      try {
+        verifierResult = await callVerifier(article, sourcesText);
+      } catch (err) {
+        console.error(`❌ Error en verificación (intento ${writerAttempts}):`, err);
+        verifierResult = {
+          decision: 'publicar',
+          nivelConfianza: 60,
+          datosNoRespaldados: [],
+          problemasEditoriales: [],
+          notasAprobacion: 'Verificador no disponible — publicado con restricciones del redactor activas',
+        };
+      }
     }
 
     const decision = verifierResult.decision;
