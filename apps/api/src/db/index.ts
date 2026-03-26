@@ -62,6 +62,11 @@ export function initDb() {
       id TEXT PRIMARY KEY, match_id TEXT UNIQUE, data TEXT NOT NULL,
       cached_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
+    CREATE TABLE IF NOT EXISTS pipeline_discards (
+      id TEXT PRIMARY KEY, original_title TEXT, reason TEXT,
+      writer_attempts INTEGER DEFAULT 0, datos_problema TEXT, problemas_editoriales TEXT,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
     CREATE INDEX IF NOT EXISTS idx_articles_slug ON articles(slug);
     CREATE INDEX IF NOT EXISTS idx_articles_status ON articles(status, published_at);
     CREATE INDEX IF NOT EXISTS idx_articles_categoria ON articles(categoria);
