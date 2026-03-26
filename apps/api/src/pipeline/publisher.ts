@@ -83,7 +83,7 @@ export async function runPipeline(options: PublishOptions = {}): Promise<{
   try {
     const newItems = await scrapeAllSources();
     stats.scraped = newItems.length;
-    if (!newItems.length) return stats;
+    // No cortamos si no hay items nuevos — puede haber items reseteados pendientes en la DB
 
     const maxItems = OPERATION_MODE === 'volume' ? 30 : 15;
     const groups = getUnprocessedItems(maxItems);
