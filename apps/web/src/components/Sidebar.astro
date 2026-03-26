@@ -1,12 +1,16 @@
 ---
-import { getStandings, getNextMatch, getLastResult } from '../lib/api';
+import { getStandings, getCopaStandings, getNextMatch, getLastResult } from '../lib/api';
 import { TeamLogo } from './TeamLogo';
 
 const standings = await getStandings();
+const copaResult = await getCopaStandings();
 const nextMatch = await getNextMatch();
 const lastResult = await getLastResult();
 
 const top8 = standings?.slice(0, 8) ?? [];
+const copaRows = copaResult?.rows?.slice(0, 6) ?? [];
+const copaLabel = copaResult?.group || 'Copa CONMEBOL';
+const copaComp  = copaResult?.competition || '';
 
 const TZ = 'America/Argentina/Buenos_Aires';
 
@@ -16,9 +20,13 @@ function fmtDate(d: string) {
   });
 }
 function fmtTime(d: string) {
-  return new Date(d).toLocaleTimeString('es-AR', {
-    hour: '2-digit', minute: '2-digit', timeZone: TZ
-  });
+  const date = new Date(d);
+  const parts = new Intl.DateTimeFormat('es-AR', {
+    hour: '2-digit', minute: '2-digit', hour12: false, timeZone: TZ
+  }).formatToParts(date);
+  const h = parts.find(p => p.type === 'hour')?.value ?? '00';
+  const m = parts.find(p => p.type === 'minute')?.value ?? '00';
+  return `${h}:${m}`;
 }
 function fmtDateLong(d: string) {
   return new Date(d).toLocaleDateString('es-AR', {
@@ -56,7 +64,7 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
           <span class="vs-text">VS</span>
           <div class="match-datetime">
             <span class="match-day">{fmtDate(nextMatch.date)}</span>
-            <span class="match-time">{fmtTime(nextMatch.date)}</span>
+            <span class="match-time">{fmtTime(nextMatch.date)} hs</span>
           </div>
         </div>
         <div class="match-team-block match-team-block--right">
@@ -111,13 +119,50 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
     </div>
   )}
 
-  <!-- ── Tabla de posiciones ──────────────────────────────────────── -->
+  <!-- ── Copa CONMEBOL tabla ─────────────────────────────────────────── -->
+  {copaRows.length > 0 && (
+    <div class="widget">
+      <div class="widget-title-row">
+        <div class="widget-title-stack">
+          <span class="widget-title-main">{copaLabel}</span>
+          <span class="widget-title-sub">{copaComp}</span>
+        </div>
+        <a href="/tabla" class="widget-more">Ver →</a>
+      </div>
+      <table class="standings-table" role="table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th colspan="2">Equipo</th>
+            <th title="Partidos jugados">PJ</th>
+            <th title="Puntos">Pts</th>
+          </tr>
+        </thead>
+        <tbody>
+          {copaRows.map(row => (
+            <tr class:list={[{ 'standings-row--river': row.isRiver }]}>
+              <td class="standings-pos">{row.position}</td>
+              <td class="standings-logo"><TeamLogo team={row.team} size={18} client:load /></td>
+              <td class="standings-team">{row.team.replace('River Plate', 'River').replace(' Rivadavia',' Riv.').replace(' Juniors','').replace(' Central','').replace(' Junín','')}</td>
+              <td>{row.played}</td>
+              <td class="standings-pts">{row.points}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )}
+
+  <!-- ── Tabla Liga Profesional ──────────────────────────────────────── -->
   {top8.length > 0 && (
     <div class="widget">
-      <h3 class="widget-title">
-        Tabla de posiciones
+      <div class="widget-title-row">
+        <div class="widget-title-stack">
+          <span class="widget-title-main">Tabla · Liga Profesional</span>
+          <span class="widget-title-sub">Zona de River</span>
+        </div>
         <a href="/tabla" class="widget-more">Ver completa →</a>
-      </h3>
+      </div>
       <table class="standings-table" role="table">
         <thead>
           <tr>
@@ -258,8 +303,46 @@ function riverResult(m: any): 'W' | 'D' | 'L' | null {
     color: var(--color-primary);
     text-decoration: none;
     font-weight: 600;
+    flex-shrink: 0;
   }
   .widget-more:hover { text-decoration: underline; }
+  .widget-comp {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.62rem;
+    color: var(--color-text-muted);
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    margin-left: 0.25rem;
+  }
+  .widget-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.85rem;
+    gap: 0.5rem;
+  }
+  .widget-title-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .widget-title-main {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-muted);
+  }
+  .widget-title-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.62rem;
+    color: var(--color-text-muted);
+    opacity: 0.75;
+    text-transform: none;
+    letter-spacing: 0;
+  }
 
   /* ── Match / Result shared ──────────────────── */
   .match-comp-badge {

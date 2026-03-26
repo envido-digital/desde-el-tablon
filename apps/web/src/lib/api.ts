@@ -31,6 +31,13 @@ export interface StandingsRow {
   isRiver: boolean;
 }
 
+export interface StandingsResult {
+  rows: StandingsRow[];
+  label: string;
+  competition: string;
+  group: string;
+}
+
 export interface MatchData {
   id: string;
   homeTeam: string;
@@ -84,6 +91,18 @@ export async function getRelatedArticles(slug: string): Promise<Article[] | null
 
 export async function getStandings(): Promise<StandingsRow[] | null> {
   return apiFetch('/api/sports/standings');
+}
+
+export async function getZonaStandings(): Promise<StandingsResult | null> {
+  return apiFetch('/api/sports/standings-zona');
+}
+
+export async function getAnualStandings(): Promise<StandingsResult | null> {
+  return apiFetch('/api/sports/standings-anual');
+}
+
+export async function getCopaStandings(): Promise<StandingsResult | null> {
+  return apiFetch('/api/sports/standings-copa');
 }
 
 export async function getNextMatch(): Promise<MatchData | null> {

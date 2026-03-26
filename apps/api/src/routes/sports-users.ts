@@ -1,5 +1,5 @@
 import { Router, type Request, type Response } from 'express';
-import { getStandings, getNextMatch, getLastResult, getAllMatches } from '../services/sports.js';
+import { getStandings, getNextMatch, getLastResult, getAllMatches, getZonaStandings, getAnualStandings, getCopaStandings } from '../services/sports.js';
 import { awardPoints, getUserProfile, getLeaderboard, recordDailyLogin, hasReadArticleToday } from '../services/gamification.js';
 import { hashPassword, verifyPassword, signToken, validatePassword } from '../lib/auth.js';
 import { requireAuth } from '../middleware/auth.js';
@@ -10,10 +10,13 @@ export const sportsRouter = Router();
 export const usersRouter = Router();
 
 // ── Sports ─────────────────────────────────────────────────────────────────────
-sportsRouter.get('/standings',   async (_req, res) => res.json(await getStandings()));
-sportsRouter.get('/next-match',  async (_req, res) => res.json(await getNextMatch()));
-sportsRouter.get('/last-result', async (_req, res) => res.json(await getLastResult()));
-sportsRouter.get('/all-matches', async (_req, res) => res.json(await getAllMatches()));
+sportsRouter.get('/standings',        async (_req, res) => res.json(await getStandings()));
+sportsRouter.get('/standings-zona',   async (_req, res) => res.json(await getZonaStandings()));
+sportsRouter.get('/standings-anual',  async (_req, res) => res.json(await getAnualStandings()));
+sportsRouter.get('/standings-copa',   async (_req, res) => res.json(await getCopaStandings()));
+sportsRouter.get('/next-match',       async (_req, res) => res.json(await getNextMatch()));
+sportsRouter.get('/last-result',      async (_req, res) => res.json(await getLastResult()));
+sportsRouter.get('/all-matches',      async (_req, res) => res.json(await getAllMatches()));
 
 // ── Register ───────────────────────────────────────────────────────────────────
 usersRouter.post('/register', async (req: Request, res: Response) => {

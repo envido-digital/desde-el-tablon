@@ -2,15 +2,29 @@
 import BaseHTML from '../layouts/BaseHTML.astro';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
-import { getStandings } from '../lib/api';
+import { getZonaStandings, getAnualStandings, getCopaStandings } from '../lib/api';
 import { TeamLogo } from '../components/TeamLogo';
 
-const standings = await getStandings();
+const [zonaResult, anualResult, copaResult] = await Promise.all([
+  getZonaStandings(),
+  getAnualStandings(),
+  getCopaStandings(),
+]);
+
+const zonaRows  = zonaResult?.rows  ?? [];
+const anualRows = anualResult?.rows ?? [];
+const copaRows  = copaResult?.rows  ?? [];
+
+const tabs = [
+  { id: 'zona',  label: zonaResult?.group  || 'Zona',  sublabel: zonaResult?.competition  || 'Liga Profesional', rows: zonaRows,  show: zonaRows.length > 0  },
+  { id: 'anual', label: 'Anual',                        sublabel: 'Liga Profesional',                             rows: anualRows, show: anualRows.length > 0 },
+  { id: 'copa',  label: copaResult?.group  || 'Copa',  sublabel: copaResult?.competition  || 'Copa CONMEBOL',    rows: copaRows,  show: copaRows.length > 0  },
+].filter(t => t.show);
 ---
 
 <BaseHTML
-  title="Tabla de posiciones — Liga Profesional Argentina"
-  description="Tabla de posiciones actualizada de la Liga Profesional Argentina con River Plate. Posición, puntos, resultados y estadísticas de cada equipo."
+  title="Tabla de posiciones — River Plate 2026"
+  description="Tablas de posiciones actualizadas de River Plate: Liga Profesional por zona, tabla anual acumulada y Copa CONMEBOL fase de grupos."
 >
   <Header />
 
@@ -18,85 +32,113 @@ const standings = await getStandings();
     <div class="tabla-layout">
       <div class="tabla-header">
         <h1 class="tabla-title font-display">Tabla de posiciones</h1>
-        <p class="tabla-sub">Liga Profesional Argentina · Actualización automática</p>
+        <p class="tabla-sub">Actualización automática · Fuente: Promiedos</p>
       </div>
 
-      {standings && standings.length > 0 ? (
-        <div class="tabla-container">
-          <table class="standings-full" role="table" aria-label="Tabla de posiciones Liga Profesional Argentina">
-            <thead>
-              <tr>
-                <th class="th-pos" scope="col">#</th>
-                <th class="th-team" scope="col">Equipo</th>
-                <th scope="col" title="Partidos Jugados">PJ</th>
-                <th scope="col" title="Ganados">G</th>
-                <th scope="col" title="Empatados">E</th>
-                <th scope="col" title="Perdidos">P</th>
-                <th scope="col" title="Goles a favor">GF</th>
-                <th scope="col" title="Goles en contra">GC</th>
-                <th scope="col" title="Diferencia de goles">Dif</th>
-                <th scope="col" title="Puntos" class="th-pts">Pts</th>
-                <th scope="col" title="Últimos 5 resultados">Forma</th>
-              </tr>
-            </thead>
-            <tbody>
-              {standings.map((row, i) => (
-                <tr class:list={[
-                  'standings-row',
-                  { 'row--river': row.isRiver },
-                  { 'row--top4': !row.isRiver && i < 4 },
-                ]}>
-                  <td class="td-pos">{row.position}</td>
-<td class="td-team">
-  <div class="td-team-inner">
-    <TeamLogo team={row.team} size={22} client:load />
-    <span class:list={['team-name', { 'team-name--river': row.isRiver }]}>
-      {row.team}
-    </span>
-    {row.isRiver && <span class="river-badge" aria-label="River Plate">⚽</span>}
-  </div>
-</td>
-                  <td>{row.played}</td>
-                  <td class="td-g">{row.wins}</td>
-                  <td>{row.draws}</td>
-                  <td>{row.losses}</td>
-                  <td>{row.goalsFor}</td>
-                  <td>{row.goalsAgainst}</td>
-                  <td class:list={['td-diff', { 'diff-pos': row.goalDiff > 0, 'diff-neg': row.goalDiff < 0 }]}>
-                    {row.goalDiff > 0 ? '+' : ''}{row.goalDiff}
-                  </td>
-                  <td class="td-pts">{row.points}</td>
-                  <td class="td-form">
-                    {(row.form || []).map((f: string) => (
-                      <span class:list={['form-dot', `form-${f.toLowerCase()}`]} title={f === 'W' ? 'Victoria' : f === 'D' ? 'Empate' : 'Derrota'}>
-                        {f === 'W' ? 'G' : f === 'D' ? 'E' : 'P'}
-                      </span>
-                    ))}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <!-- Legend -->
-          <div class="tabla-legend">
-            <div class="legend-item">
-              <span class="legend-dot legend-dot--river"></span>
-              <span>River Plate</span>
-            </div>
-            <div class="legend-sep">·</div>
-            <div class="legend-item form-g-label">G = Victoria</div>
-            <div class="legend-item form-e-label">E = Empate</div>
-            <div class="legend-item form-p-label">P = Derrota</div>
-          </div>
-
-          <p class="tabla-source">
-            Datos actualizados automáticamente. Fuente: <a href="https://www.api-football.com" target="_blank" rel="noopener noreferrer nofollow">API-Football</a>
-          </p>
+      {tabs.length === 0 ? (
+        <div class="tabla-empty">
+          <p>No se pudo cargar ninguna tabla. Intentá más tarde.</p>
         </div>
       ) : (
-        <div class="tabla-empty">
-          <p>No se pudo cargar la tabla. Intentá más tarde.</p>
+        <div class="tabs-wrapper">
+          <div class="tabs-nav" role="tablist">
+            {tabs.map((tab, i) => (
+              <button
+                class:list={['tab-btn', { 'tab-btn--active': i === 0 }]}
+                role="tab"
+                aria-selected={i === 0 ? 'true' : 'false'}
+                aria-controls={`panel-${tab.id}`}
+                data-tab={tab.id}
+                id={`tab-${tab.id}`}
+              >
+                <span class="tab-main">{tab.label}</span>
+                <span class="tab-sub">{tab.sublabel}</span>
+              </button>
+            ))}
+          </div>
+
+          {tabs.map((tab, i) => (
+            <div
+              id={`panel-${tab.id}`}
+              role="tabpanel"
+              aria-labelledby={`tab-${tab.id}`}
+              class:list={['tab-panel', { 'tab-panel--active': i === 0 }]}
+            >
+              <div class="tabla-container">
+                <table class="standings-full" role="table" aria-label={tab.label}>
+                  <thead>
+                    <tr>
+                      <th class="th-pos" scope="col">#</th>
+                      <th class="th-team" scope="col">Equipo</th>
+                      <th scope="col" title="Partidos Jugados">PJ</th>
+                      <th scope="col" title="Ganados">G</th>
+                      <th scope="col" title="Empatados">E</th>
+                      <th scope="col" title="Perdidos">P</th>
+                      <th class="th-hide-sm" scope="col" title="Goles a favor">GF</th>
+                      <th class="th-hide-sm" scope="col" title="Goles en contra">GC</th>
+                      <th scope="col" title="Diferencia de goles">Dif</th>
+                      <th scope="col" title="Puntos" class="th-pts">Pts</th>
+                      <th class="th-hide-xs" scope="col" title="Últimos 5 resultados">Forma</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tab.rows.map((row, idx) => (
+                      <tr class:list={[
+                        'standings-row',
+                        { 'row--river': row.isRiver },
+                        { 'row--top4': !row.isRiver && idx < 4 },
+                      ]}>
+                        <td class="td-pos">{row.position}</td>
+                        <td class="td-team">
+                          <div class="td-team-inner">
+                            <TeamLogo team={row.team} size={22} client:load />
+                            <span class:list={['team-name', { 'team-name--river': row.isRiver }]}>
+                              {row.team}
+                            </span>
+                          </div>
+                        </td>
+                        <td>{row.played}</td>
+                        <td class="td-g">{row.wins}</td>
+                        <td>{row.draws}</td>
+                        <td>{row.losses}</td>
+                        <td class="td-hide-sm">{row.goalsFor}</td>
+                        <td class="td-hide-sm">{row.goalsAgainst}</td>
+                        <td class:list={['td-diff', { 'diff-pos': row.goalDiff > 0, 'diff-neg': row.goalDiff < 0 }]}>
+                          {row.goalDiff > 0 ? '+' : ''}{row.goalDiff}
+                        </td>
+                        <td class="td-pts">{row.points}</td>
+                        <td class="td-form td-hide-xs">
+                          {(row.form || []).map((f: string) => (
+                            <span
+                              class:list={['form-dot', `form-${f.toLowerCase()}`]}
+                              title={f === 'W' ? 'Victoria' : f === 'D' ? 'Empate' : 'Derrota'}
+                            >
+                              {f === 'W' ? 'G' : f === 'D' ? 'E' : 'P'}
+                            </span>
+                          ))}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div class="tabla-legend">
+                  <div class="legend-item">
+                    <span class="legend-dot legend-dot--river"></span>
+                    <span>River Plate</span>
+                  </div>
+                  <div class="legend-sep">·</div>
+                  <div class="legend-item form-g-label">G = Victoria</div>
+                  <div class="legend-item form-e-label">E = Empate</div>
+                  <div class="legend-item form-p-label">P = Derrota</div>
+                </div>
+
+                <p class="tabla-source">
+                  Datos actualizados automáticamente · <a href="https://www.promiedos.com.ar" target="_blank" rel="noopener noreferrer nofollow">Promiedos</a>
+                </p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -105,36 +147,103 @@ const standings = await getStandings();
   <Footer />
 </BaseHTML>
 
+<script>
+  const buttons = document.querySelectorAll<HTMLButtonElement>('.tab-btn');
+  const panels  = document.querySelectorAll<HTMLElement>('.tab-panel');
+
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      buttons.forEach(b => {
+        b.classList.toggle('tab-btn--active', b.dataset.tab === target);
+        b.setAttribute('aria-selected', b.dataset.tab === target ? 'true' : 'false');
+      });
+      panels.forEach(p => {
+        p.classList.toggle('tab-panel--active', p.id === `panel-${target}`);
+      });
+    });
+  });
+</script>
+
 <style>
   .tabla-layout {
-    max-width: 960px;
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 2.5rem 1.5rem;
+    padding: 2rem 1rem;
   }
-  .tabla-header { margin-bottom: 2rem; }
-  .tabla-title { font-size: 2rem; font-weight: 700; color: var(--color-text); margin-bottom: 0.35rem; }
-  .tabla-sub { font-size: 0.85rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+  .tabla-header { margin-bottom: 1.75rem; }
+  .tabla-title { font-size: clamp(1.6rem, 3vw, 2.1rem); font-weight: 700; color: var(--color-text); margin-bottom: 0.3rem; }
+  .tabla-sub { font-size: 0.82rem; color: var(--color-text-muted); font-family: 'Inter', sans-serif; }
+  .tabla-empty { text-align: center; padding: 3rem; font-family: 'Inter', sans-serif; color: var(--color-text-muted); }
 
-  /* ── Table ───────────────────────────────── */
+  /* ── Tabs ────────────────────────────────────────────────────────── */
+  .tabs-nav {
+    display: flex;
+    border-bottom: 2px solid var(--color-border);
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tabs-nav::-webkit-scrollbar { display: none; }
+
+  .tab-btn {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75rem 1.25rem;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    border-radius: 6px 6px 0 0;
+    gap: 0.15rem;
+  }
+  .tab-btn:hover { background: var(--color-surface); }
+  .tab-btn--active { border-bottom-color: var(--color-primary); background: white; }
+
+  .tab-main {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--color-text);
+    white-space: nowrap;
+  }
+  .tab-sub {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.67rem;
+    color: var(--color-text-muted);
+    white-space: nowrap;
+  }
+  .tab-btn--active .tab-main { color: var(--color-primary); }
+
+  .tab-panel { display: none; }
+  .tab-panel--active { display: block; }
+
+  /* ── Table container ─────────────────────────────────────────────── */
   .tabla-container {
     background: white;
-    border-radius: 12px;
     border: 1px solid var(--color-border);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
     overflow: hidden;
   }
+
   .standings-full {
     width: 100%;
     border-collapse: collapse;
     font-family: 'Inter', sans-serif;
-    font-size: 0.88rem;
+    font-size: 0.875rem;
   }
   .standings-full thead {
     background: var(--color-surface);
     border-bottom: 2px solid var(--color-border);
   }
   .standings-full th {
-    padding: 0.85rem 0.75rem;
-    font-size: 0.72rem;
+    padding: 0.75rem 0.6rem;
+    font-size: 0.7rem;
     font-weight: 700;
     color: var(--color-text-muted);
     letter-spacing: 0.05em;
@@ -142,63 +251,77 @@ const standings = await getStandings();
     text-align: center;
   }
   .th-team { text-align: left; }
-  .th-pts { color: var(--color-text); }
+  .th-pos  { text-align: left; }
+  .th-pts  { color: var(--color-text); }
 
-  .standings-row td { padding: 0.75rem; text-align: center; border-bottom: 1px solid var(--color-border); }
-  .standings-row:last-child td { border-bottom: none; }
-
-  .row--river {
-    background: #fef2f2;
+  .standings-row td {
+    padding: 0.65rem 0.6rem;
+    text-align: center;
+    border-bottom: 1px solid var(--color-border);
+    vertical-align: middle;
   }
+  .standings-row:last-child td { border-bottom: none; }
+  .row--river { background: #fef2f2; }
   .row--river td { border-bottom-color: #fecaca; }
-  .row--top4 { opacity: 0.8; }
 
-  .td-pos { color: var(--color-text-muted); font-weight: 600; width: 36px; }
-.td-team-inner { display: flex; align-items: center; gap: 0.5rem; }
-.td-team-inner img, .td-team-inner div { 
-  width: 22px !important; 
-  height: 22px !important; 
-  object-fit: contain !important;
-  flex-shrink: 0;
-}
-  .team-name { font-weight: 500; }
+  .td-pos { color: var(--color-text-muted); font-weight: 600; width: 32px; text-align: left; }
+
+  .td-team { text-align: left !important; }
+  .td-team-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .td-team-inner img,
+  .td-team-inner > div {
+    width: 22px !important;
+    height: 22px !important;
+    object-fit: contain !important;
+    flex-shrink: 0;
+  }
+  .team-name {
+    font-weight: 500;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+  }
   .team-name--river { color: var(--color-primary); font-weight: 700; }
-  .river-badge { margin-left: 0.4rem; font-size: 0.75rem; }
-  .td-g { font-weight: 600; color: #16a34a; }
+
+  .td-g    { font-weight: 600; color: #16a34a; }
   .td-diff { font-weight: 600; }
   .diff-pos { color: #16a34a; }
   .diff-neg { color: #dc2626; }
-  .td-pts { font-weight: 800; font-size: 1rem; color: var(--color-text); }
+  .td-pts  { font-weight: 800; font-size: 1rem; color: var(--color-text); }
 
-  /* ── Form dots ───────────────────────────── */
-  .td-form { display: flex; align-items: center; justify-content: center; gap: 2px; padding: 0.75rem 0.5rem; }
+  .td-form { display: flex; align-items: center; justify-content: center; gap: 2px; padding: 0.65rem 0.4rem; }
   .form-dot {
-    width: 22px; height: 22px;
+    width: 20px; height: 20px;
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    font-size: 0.62rem;
-    font-weight: 700;
-    color: white;
-    flex-shrink: 0;
+    font-size: 0.6rem; font-weight: 700;
+    color: white; flex-shrink: 0;
   }
   .form-w { background: #16a34a; }
   .form-d { background: #ca8a04; }
   .form-l { background: #dc2626; }
 
-  /* ── Legend ──────────────────────────────── */
+  /* ── Legend ──────────────────────────────────────────────────────── */
   .tabla-legend {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    padding: 0.85rem 1rem;
+    padding: 0.7rem 1rem;
     background: var(--color-surface);
-    font-size: 0.75rem;
+    font-size: 0.72rem;
     color: var(--color-text-muted);
     font-family: 'Inter', sans-serif;
     flex-wrap: wrap;
+    border-top: 1px solid var(--color-border);
   }
-  .legend-item { display: flex; align-items: center; gap: 0.35rem; }
-  .legend-dot { width: 12px; height: 12px; border-radius: 2px; }
+  .legend-item { display: flex; align-items: center; gap: 0.3rem; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 2px; }
   .legend-dot--river { background: #fef2f2; border: 1px solid #fca5a5; }
   .legend-sep { color: var(--color-border); }
   .form-g-label::before { content: '●'; color: #16a34a; margin-right: 0.25rem; }
@@ -206,28 +329,28 @@ const standings = await getStandings();
   .form-p-label::before { content: '●'; color: #dc2626; margin-right: 0.25rem; }
 
   .tabla-source {
-    padding: 0.75rem 1rem;
-    font-size: 0.72rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.7rem;
     color: var(--color-text-muted);
     font-family: 'Inter', sans-serif;
     text-align: right;
     border-top: 1px solid var(--color-border);
   }
   .tabla-source a { color: var(--color-primary); text-decoration: none; }
-  .tabla-empty {
-    text-align: center;
-    padding: 3rem;
-    font-family: 'Inter', sans-serif;
-    color: var(--color-text-muted);
-  }
 
+  /* ── Responsive ──────────────────────────────────────────────────── */
   @media (max-width: 640px) {
-    .tabla-layout { padding: 1.25rem 0.75rem; }
-    .standings-full th:nth-child(5),
-    .standings-full th:nth-child(6),
-    .standings-full td:nth-child(5),
-    .standings-full td:nth-child(6) { display: none; }
-    .td-form { gap: 1px; }
-    .form-dot { width: 18px; height: 18px; font-size: 0.55rem; }
+    .tabla-layout { padding: 1rem 0.5rem; }
+    .tab-btn { padding: 0.6rem 0.85rem; }
+    .th-hide-sm, .td-hide-sm { display: none; }
+    .team-name { max-width: 130px; }
+    .form-dot { width: 16px; height: 16px; font-size: 0.55rem; }
+  }
+  @media (max-width: 420px) {
+    .th-hide-xs, .td-hide-xs { display: none; }
+    .team-name { max-width: 95px; }
+    .tab-main { font-size: 0.78rem; }
+    .tab-sub { display: none; }
+    .tab-btn { padding: 0.6rem 0.7rem; }
   }
 </style>
