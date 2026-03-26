@@ -176,17 +176,31 @@ const sd = JSON.stringify({
 
       <!-- Sidebar -->
       <aside class="article-sidebar">
-        <Sidebar />
-        {ADSENSE_PUBLISHER
-          ? <div class="sidebar-ad-sticky">
-              <ins class="adsbygoogle" style="display:block"
+        <!-- Ad slot TOP (antes de próximo partido) -->
+        <div class="sidebar-ad-top">
+          {ADSENSE_PUBLISHER
+            ? <ins class="adsbygoogle" style="display:block"
                 data-ad-client={ADSENSE_PUBLISHER}
                 data-ad-slot={AD_SLOT_SIDEBAR}
                 data-ad-format="auto"
                 data-full-width-responsive="true" />
-            </div>
-          : <div class="ad-placeholder-sidebar"><span>Publicidad · 300×600</span></div>
-        }
+            : <div class="ad-placeholder-sidebar"><span>Publicidad · 300×250</span></div>
+          }
+        </div>
+
+        <Sidebar />
+
+        <!-- Ad slot BOTTOM (después del sidebar) -->
+        <div class="sidebar-ad-bottom">
+          {ADSENSE_PUBLISHER
+            ? <ins class="adsbygoogle" style="display:block"
+                data-ad-client={ADSENSE_PUBLISHER}
+                data-ad-slot={AD_SLOT_SIDEBAR}
+                data-ad-format="auto"
+                data-full-width-responsive="true" />
+            : <div class="ad-placeholder-sidebar"><span>Publicidad · 300×600</span></div>
+          }
+        </div>
       </aside>
     </div>
 
@@ -234,7 +248,7 @@ const sd = JSON.stringify({
   }
   @media (max-width: 900px) {
     .article-container { grid-template-columns: 1fr; }
-    .article-sidebar { display: none; }
+    .article-sidebar { display: block; margin-top: 2rem; }
   }
 
   .article-title {
@@ -308,13 +322,27 @@ const sd = JSON.stringify({
   }
 
   /* Sidebar */
+  /* Sidebar ad slots */
+  .sidebar-ad-top,
+  .sidebar-ad-bottom {
+    width: 100%;
+  }
+  .sidebar-ad-bottom {
+    margin-top: 1.5rem;
+  }
   .sidebar-ad-sticky { position: sticky; top: 1.5rem; }
   .ad-placeholder-sidebar {
-    display: flex; align-items: center; justify-content: center;
-    background: var(--color-ad-bg, #0C0C0C); border: 1px solid var(--color-ad-border, #161616);
-    border-radius: 6px; min-height: 600px; margin: 0 0 1.5rem;
-    font-size: 0.58rem; color: var(--color-ad-text, #1C1C1C);
-    font-family: sans-serif; letter-spacing: 0.1em; text-transform: uppercase;
+    background: #111;
+    border: 1px dashed #333;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 120px;
+    color: #555;
+    font-size: 0.75rem;
+    font-family: 'Inter', sans-serif;
+  }
   }
 
   /* Badges + meta */
