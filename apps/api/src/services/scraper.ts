@@ -10,10 +10,10 @@ export interface ScrapedItem {
   publishedAt?: string;
 }
 
-// River Plate keywords for relevance scoring
+// River Plate keywords — usados solo para scoring, no para filtrar
 const PRIMARY_KEYWORDS = ['river plate', 'river', 'millonario', 'millo'];
-const SECONDARY_KEYWORDS = ['gallardo', 'monumental', 'libertadores', 'superclásico', 'boca', 'apertura', 'clausura', 'copa'];
-const PLAYER_KEYWORDS = ['echeverri', 'colidio', 'montiel', 'de la cruz', 'borré', 'armani', 'aliendro', 'solari'];
+const SECONDARY_KEYWORDS = ['coudet', 'monumental', 'libertadores', 'sudamericana', 'superclásico', 'boca', 'apertura', 'clausura', 'copa', 'núñez'];
+const PLAYER_KEYWORDS = ['echeverri', 'colidio', 'montiel', 'de la cruz', 'armani', 'aliendro', 'kranevitter', 'díaz', 'pérez', 'solari', 'borré', 'beltrán', 'simón', 'bootstrap'];
 
 export function calculateRelevanceScore(title: string, excerpt: string): number {
   const text = `${title} ${excerpt}`.toLowerCase();
@@ -48,7 +48,7 @@ export function hashTitle(title: string): string {
 
 export function isDuplicate(titleHash: string): boolean {
   const existing = sqlite.prepare(
-    'SELECT id FROM scraped_items WHERE title_hash = ? AND scraped_at > datetime(\'now\', \'-24 hours\')'
+    'SELECT id FROM scraped_items WHERE title_hash = ? AND scraped_at > datetime(\'now\', \'-7 days\')'
   ).get(titleHash);
   return !!existing;
 }
@@ -85,15 +85,13 @@ export async function scrapeRSS(sourceId: string, rssUrl: string): Promise<Scrap
     const feed = await parser.parseURL(rssUrl);
     const items: ScrapedItem[] = [];
 
-    for (const item of (feed.items || []).slice(0, 20)) {
+    for (const item of (feed.items || []).slice(0, 30)) {
       const title = item.title || '';
       const excerpt = item.contentSnippet || item.summary || '';
       const url = item.link || '';
       const publishedAt = item.pubDate || item.isoDate;
 
-      const relevance = calculateRelevanceScore(title, excerpt);
-      if (relevance < 0.3) continue;
-
+      // Sin filtro de relevancia: todas las notas de las fuentes configuradas se procesan
       items.push({
         source: sourceId,
         title,
@@ -195,9 +193,7 @@ export async function scrapeHTML(sourceId: string, config: HtmlScraperConfig): P
           : (dateEl.text().trim() || undefined);
       }
 
-      const relevance = calculateRelevanceScore(title, '');
-      if (relevance < 0.3) return;
-
+      // Sin filtro de relevancia: todas las notas de las fuentes configuradas se procesan
       items.push({ source: sourceId, title, excerpt: '', url, publishedAt });
     });
 
