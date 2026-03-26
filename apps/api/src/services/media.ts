@@ -78,11 +78,11 @@ const DEFAULT_RIVER_IMAGES: MediaAsset[] = [
     license: 'CC BY-SA 4.0',
   },
   {
-    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/River_Plate_escudo.svg/480px-River_Plate_escudo.svg.png',
-    alt: 'Club Atlético River Plate',
+    url: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Estadio_Monumental.jpg/1200px-Estadio_Monumental.jpg',
+    alt: 'Estadio Monumental de River Plate',
     source: 'Wikimedia Commons',
-    sourceUrl: 'https://commons.wikimedia.org/wiki/File:River_Plate_escudo.svg',
-    license: 'Public Domain',
+    sourceUrl: 'https://commons.wikimedia.org/wiki/File:Estadio_Monumental.jpg',
+    license: 'CC BY-SA 4.0',
   },
 ];
 

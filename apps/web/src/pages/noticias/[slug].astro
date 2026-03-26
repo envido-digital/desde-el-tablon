@@ -88,10 +88,11 @@ const sd = JSON.stringify({
   <Header />
   <article class="article-page" data-article-id={article.id}>
 
-    {article.featured_image && (
+    {article.featured_image && !article.featured_image.url.includes('wikipedia.org') && (
       <div class="article-hero">
         <img src={article.featured_image.url} alt={article.titulo}
-          width="1200" height="630" loading="eager" fetchpriority="high" />
+          width="1200" height="630" loading="eager" fetchpriority="high"
+          onerror="this.parentElement.style.display='none'" />
       </div>
     )}
 
