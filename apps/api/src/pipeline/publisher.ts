@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { sqlite } from '../db/index.js';
 import { scrapeAllSources, getUnprocessedItems, markItemsProcessed, hashTitle } from '../services/scraper.js';
 import { rewriteArticle, generateHistoricalNote, initDiscardLog, type RawArticle, type MatchFacts, type TransferFacts } from '../services/ai-rewriter.js';
+import { OPERATION_MODE } from '../config/models.js';
 import { findFeaturedImage } from '../services/media.js';
 import { linkArticleToPlayers } from '../services/players.js';
 
@@ -29,17 +30,22 @@ export function saveArticle(data: {
     slug = `${slug}-${Date.now()}`;
   }
 
+  const status = OPERATION_MODE === 'volume' ? 'pending' : 'published';
+  const requiresReview = OPERATION_MODE === 'volume' ? 1 : 0;
+  const publishedAt = OPERATION_MODE === 'volume' ? null : 'CURRENT_TIMESTAMP';
+
   sqlite.prepare(`
     INSERT INTO articles (
       id, titulo, bajada, cuerpo, slug, meta_description, categoria,
       tags, keywords, status, importance_score, tiempo_lectura,
       featured_image, sources, author_id, requires_review, review_reason,
       published_at, views
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'published', ?, ?, ?, ?, 'ai-system', 0, null,
-      CURRENT_TIMESTAMP, 0)
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'ai-system', ?, null,
+      ${OPERATION_MODE === 'volume' ? 'null' : 'CURRENT_TIMESTAMP'}, 0)
   `).run(
     id, data.titulo, data.bajada, data.cuerpo, slug, data.metaDescription, data.categoria,
     JSON.stringify(data.tags), JSON.stringify(data.keywords),
+    status,
     data.importanceScore || 0.5, data.tiempoLectura,
     data.featuredImage ? JSON.stringify(data.featuredImage) : null,
     JSON.stringify({
@@ -47,6 +53,7 @@ export function saveArticle(data: {
       datosVerificables: data.datosVerificables || [],
       pipelineAudit: data.pipelineAudit || {},
     }),
+    requiresReview,
   );
 
   const audit = data.pipelineAudit as { writerAttempts?: number; verifierNotes?: string } | undefined;
@@ -78,7 +85,8 @@ export async function runPipeline(options: PublishOptions = {}): Promise<{
     stats.scraped = newItems.length;
     if (!newItems.length) return stats;
 
-    const groups = getUnprocessedItems(5);
+    const maxItems = OPERATION_MODE === 'volume' ? 30 : 15;
+    const groups = getUnprocessedItems(maxItems);
 
     for (const group of groups) {
       try {
@@ -100,14 +108,11 @@ export async function runPipeline(options: PublishOptions = {}): Promise<{
           // Verifier discarded — reason is in pipeline_discards table
           markItemsProcessed('discarded', rawArticles.map(a => hashTitle(a.title)));
           stats.discarded++;
-          await new Promise(r => setTimeout(r, 2000));
+          if (OPERATION_MODE !== 'volume') await new Promise(r => setTimeout(r, 2000));
           continue;
         }
 
-        const featuredImage = await findFeaturedImage(
-          generated.keywords,
-          rawArticles[0]?.url,   // URL del artículo fuente principal
-        );
+        const featuredImage = await findFeaturedImage(generated.keywords);
         const importanceScore = calcImportance(group.sourceLevel, group.items.length);
 
         const articleId = saveArticle({
@@ -126,7 +131,7 @@ export async function runPipeline(options: PublishOptions = {}): Promise<{
         linkArticleToPlayers(articleId, generated.titulo, body).catch(console.error);
 
         stats.published++;
-        await new Promise(r => setTimeout(r, 3000));
+        if (OPERATION_MODE !== 'volume') await new Promise(r => setTimeout(r, 3000));
 
       } catch (err) {
         console.error('Error en grupo:', err);

@@ -3,12 +3,14 @@ import { runPipeline, generateDailyHistoricalNote } from './pipeline/publisher.j
 import { getAllPlayers, enrichPlayerProfile } from './services/players.js';
 import { sendWeeklyDigest } from './services/newsletter.js';
 import { sqlite } from './db/index.js';
+import { OPERATION_MODE } from './config/models.js';
 
 export function startScheduler() {
   console.log('⏰ Iniciando scheduler...');
 
-  // Run pipeline every 30 minutes
-  cron.schedule('*/30 * * * *', async () => {
+  // Pipeline: cada 10min en volume, cada 15min en quality
+  const pipelineCron = OPERATION_MODE === 'volume' ? '*/10 * * * *' : '*/15 * * * *';
+  cron.schedule(pipelineCron, async () => {
     console.log(`[${new Date().toISOString()}] 🔄 Pipeline automático...`);
     await runPipeline();
   });
@@ -19,8 +21,8 @@ export function startScheduler() {
     await generateDailyHistoricalNote();
   });
 
-  // Auto-approve safe pending articles every 15 minutes
-  cron.schedule('*/15 * * * *', () => {
+  // Auto-approve safe pending articles every 10 minutes
+  cron.schedule('*/10 * * * *', () => {
     sqlite.prepare(`
       UPDATE articles SET status = 'published', published_at = CURRENT_TIMESTAMP
       WHERE status = 'pending' AND requires_review = 0
