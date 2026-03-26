@@ -88,13 +88,18 @@ const sd = JSON.stringify({
   <Header />
   <article class="article-page" data-article-id={article.id}>
 
-    {article.featured_image && !article.featured_image.url.includes('wikipedia.org') && (
-      <div class="article-hero">
-        <img src={article.featured_image.url} alt={article.titulo}
-          width="1200" height="630" loading="eager" fetchpriority="high"
-          onerror="this.parentElement.style.display='none'" />
-      </div>
-    )}
+    {(() => {
+      const imgUrl = article.featured_image?.url;
+      const fallback = 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c0/Estadio_Monumental.jpg/1200px-Estadio_Monumental.jpg';
+      const src = imgUrl && !imgUrl.includes('River_Plate_escudo') ? imgUrl : fallback;
+      return (
+        <div class="article-hero">
+          <img src={src} alt={article.titulo}
+            width="1200" height="630" loading="eager" fetchpriority="high"
+            onerror={`this.src='${fallback}'`} />
+        </div>
+      );
+    })()}
 
     <div class="article-container">
       <div class="article-main">
