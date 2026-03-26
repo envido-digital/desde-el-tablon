@@ -2,12 +2,12 @@ import { defineConfig } from 'astro/config';
 import react from '@astrojs/react';
 import tailwind from '@astrojs/tailwind';
 import sitemap from '@astrojs/sitemap';
-import node from '@astrojs/node';
+import vercel from '@astrojs/vercel/serverless';
 
 export default defineConfig({
   site: 'https://desdeeltablon.com',
   output: 'hybrid',
-  dapter: node({ mode: 'standalone' }),
+  adapter: vercel(),
   integrations: [
     react(),
     tailwind(),
@@ -15,10 +15,8 @@ export default defineConfig({
       filter: (page) => !page.includes('/admin') && !page.includes('/mi-cuenta'),
     }),
   ],
-  // Vercel security headers via Astro (also configure in vercel.json)
   vite: {
     build: {
-      // Split vendor chunks for better caching
       rollupOptions: {
         output: {
           manualChunks: {
