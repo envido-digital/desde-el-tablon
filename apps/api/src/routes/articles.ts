@@ -3,6 +3,7 @@ import { requireAdmin } from '../middleware/auth.js';
 import { sqlite } from '../db/index.js';
 import { approveArticle, rejectArticle, saveArticle } from '../pipeline/publisher.js';
 import { rewriteArticle } from '../services/ai-rewriter.js';
+import { createHash } from 'node:crypto';
 
 export const articlesRouter = Router();
 
@@ -77,7 +78,7 @@ articlesRouter.get('/slug/:slug', (req: Request, res: Response) => {
   if (!isBot && isBrowser) {
     // Deduplicate: one view per IP per article per day
     const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.socket.remoteAddress || 'unknown';
-    const viewKey = require('node:crypto').createHash('sha256').update(`${ip}:${req.params.slug}:${new Date().toISOString().split('T')[0]}`).digest('hex');
+    const viewKey = createHash('sha256').update(`${ip}:${req.params.slug}:${new Date().toISOString().split('T')[0]}`).digest('hex');
     const alreadyCounted = sqlite.prepare('SELECT id FROM article_reads WHERE user_id = ? AND article_id = ? AND date(created_at) = date("now")').get(viewKey, article.id as string);
     if (!alreadyCounted) {
       sqlite.prepare('UPDATE articles SET views = views + 1 WHERE slug = ?').run(req.params.slug);

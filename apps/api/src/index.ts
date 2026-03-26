@@ -18,6 +18,9 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const isProd = process.env.NODE_ENV === 'production';
 
+// ── Trust proxy (Railway está detrás de un proxy) ─────────────────────────────
+app.set('trust proxy', 1);
+
 // ── Security headers (helmet) ─────────────────────────────────────────────────
 app.use(helmet({
   contentSecurityPolicy: {
@@ -43,6 +46,7 @@ const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:4321',
   'https://desdeeltablon.com',
   'https://www.desdeeltablon.com',
+  'https://desde-el-tablon.vercel.app',
 ];
 app.use(cors({
   origin: (origin, cb) => {

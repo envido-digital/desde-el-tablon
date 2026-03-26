@@ -13,6 +13,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
+import { v4 as uuidv4 } from 'uuid';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 import { MODELS, writerModelForCategory, estimateCost } from '../config/models.js';
@@ -461,7 +462,7 @@ function logDiscard(data: {
   problemasEditoriales: string[];
 }) {
   try {
-    const { v4: uuidv4 } = require('uuid');
+    const { v4: uuidv4 } = await import('uuid');
     sqlite.prepare(`
       INSERT INTO pipeline_discards
         (id, original_title, reason, writer_attempts, datos_problema, problemas_editoriales)
