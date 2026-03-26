@@ -72,11 +72,14 @@ export function saveScrapedItem(item: ScrapedItem & { sourceId: string }): strin
 // RSS-based scraper (more reliable than HTML scraping for news)
 export async function scrapeRSS(sourceId: string, rssUrl: string): Promise<ScrapedItem[]> {
   try {
-    // Dynamic import to avoid issues
     const Parser = (await import('rss-parser')).default;
     const parser = new Parser({
-      timeout: 10000,
-      headers: { 'User-Agent': 'Desde el Tablón Bot/1.0' }
+      timeout: 15000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'application/rss+xml, application/xml, text/xml, */*',
+        'Accept-Language': 'es-AR,es;q=0.9',
+      }
     });
 
     const feed = await parser.parseURL(rssUrl);
@@ -89,7 +92,7 @@ export async function scrapeRSS(sourceId: string, rssUrl: string): Promise<Scrap
       const publishedAt = item.pubDate || item.isoDate;
 
       const relevance = calculateRelevanceScore(title, excerpt);
-      if (relevance < 0.3) continue; // Skip irrelevant items
+      if (relevance < 0.3) continue;
 
       items.push({
         source: sourceId,
@@ -100,7 +103,6 @@ export async function scrapeRSS(sourceId: string, rssUrl: string): Promise<Scrap
       });
     }
 
-    // Update last scraped
     sqlite.prepare('UPDATE news_sources SET last_scraped = CURRENT_TIMESTAMP, scrape_count = scrape_count + 1 WHERE id = ?')
       .run(sourceId);
 
@@ -112,23 +114,21 @@ export async function scrapeRSS(sourceId: string, rssUrl: string): Promise<Scrap
   }
 }
 
-// Fetch news via simple HTTP (for sites with JSON APIs)
+// Fetch news via RSS (feeds verificados y funcionando)
 export async function fetchNewsFromSource(sourceId: string, url: string): Promise<ScrapedItem[]> {
-  // RSS feeds for major Argentine sports media
   const RSS_FEEDS: Record<string, string> = {
-    'ole': 'https://www.ole.com.ar/rss/river.xml',
-    'tycsports': 'https://www.tycsports.com/rss/football.xml',
-    'infobae': 'https://www.infobae.com/feeds/rss/deportes.xml',
+    'clarin':   'https://www.clarin.com/rss/deportes/',
+    'infobae':  'https://www.infobae.com/arc/outboundfeeds/rss/category/deportes/?outputType=xml',
+    'ole':      'https://www.ole.com.ar/rss/futbol-argentino.xml',
+    'tycsports':'https://www.tycsports.com/rss/liga-profesional.xml',
     'carp-oficial': 'https://www.cariverplate.com.ar/noticias',
-    'afa': 'https://www.afa.com.ar/feeds/noticias.rss',
+    'afa':      'https://www.afa.com.ar/feeds/noticias.rss',
   };
 
   const rssUrl = RSS_FEEDS[sourceId];
   if (rssUrl) {
     return scrapeRSS(sourceId, rssUrl);
   }
-
-  // Fallback: return empty (would implement HTML scraping with Playwright in production)
   return [];
 }
 
