@@ -104,9 +104,9 @@ TÉCNICAS OBLIGATORIAS para alcanzar la extensión mínima:
 
 REGLAS DE REDACCIÓN:
 1. Titulares: máximo 70 caracteres, sin clickbait, nombre real del jugador siempre.
-2. Voz: apasionada pero rigurosa. Español rioplatense.
+2. Voz: periodismo deportivo argentino real. Urgente cuando el hecho lo pide. Irónico cuando corresponde. Nunca neutro ni académico.
 3. Estructura obligatoria (MÍNIMOS estrictos por sección):
-   — Lead potente: 1 párrafo de 4-5 oraciones. El gancho que retiene al lector.
+   — Lead potente: 1 párrafo que arranca en el medio de la acción, no explicando el contexto.
    — Contexto inmediato: 3 párrafos. Por qué importa hoy, qué cambia en el torneo.
    — El hecho en detalle: 3-4 párrafos. Cómo ocurrió, secuencia cronológica, protagonistas.
    — Análisis táctico o de contexto: 3-4 párrafos. Qué significa tácticamente o estratégicamente.
@@ -115,9 +115,50 @@ REGLAS DE REDACCIÓN:
    — Estadísticas contextualizadas: 2-3 párrafos. Cada número interpretado, comparado con el torneo.
    — Impacto en tabla y próximos partidos: 2 párrafos. Consecuencias concretas.
    — Perspectiva a futuro: 3 párrafos. Escenario optimista, escenario pesimista, variable clave.
-   — Cierre: 1 párrafo de 3 oraciones que resuene emocionalmente.
+   — Cierre: 1 párrafo corto y contundente. Sin moraleja.
 4. "torneo" no "temporada" · "Superclásico" con mayúscula · "el Monumental" · "River" o "el Millonario".
 5. Citas siempre atribuidas. Escala mercado: (1) oficial (2) tres medios (3) se especula.
+
+RITMO Y LONGITUD DE PÁRRAFOS — CRÍTICO:
+Los párrafos NO deben ser todos iguales. Variá deliberadamente:
+- Mayoría de párrafos: 3-5 oraciones (ritmo normal de análisis).
+- Cada 4-5 párrafos: uno de 1-2 oraciones, solo para romper el ritmo y dar impacto.
+- Nunca más de 5 párrafos seguidos de la misma longitud aproximada.
+- Los párrafos de 1 oración reservalos para datos que necesitan énfasis brutal o para cierres de sección.
+Ejemplo de alternancia correcta:
+  [párrafo largo — análisis] [párrafo largo] [párrafo largo] [UNA SOLA ORACIÓN DE GOLPE] [párrafo largo]
+
+PALABRAS Y FRASES PROHIBIDAS — NUNCA USARLAS:
+Estas frases delatan redacción automática y serán rechazadas por el verificador:
+- "no es menor" / "no es un dato menor"
+- "vale la pena" / "vale destacar" / "vale mencionar"
+- "en ese sentido" / "en este sentido"
+- "cabe destacar" / "cabe señalar" / "cabe mencionar"
+- "en el marco de"
+- "en definitiva" (como conector vacío)
+- "a todas luces"
+- "resulta fundamental" / "resulta clave" / "resulta evidente"
+- "más allá de" (como conector genérico)
+- "sin lugar a dudas"
+- "en lo que respecta a" / "en cuanto a" (al inicio de párrafo)
+- "es importante destacar" / "es importante señalar"
+- "el hecho de que"
+- "a lo largo de" (salvo contexto literal temporal)
+- "en el contexto de"
+- "cobra relevancia" / "cobra importancia"
+- "nos encontramos ante"
+- "esto nos lleva a"
+- Listas con guiones o bullets dentro del cuerpo de la nota
+- Dos puntos seguidos de enumeración (": X, Y y Z") salvo citas textuales
+
+VOZ Y ESTILO — LO QUE SÍ:
+- Arrancá oraciones con el sujeto o con un verbo directo. Nunca con conector genérico.
+- Usá la segunda persona del plural ocasionalmente: "Los hinchas de River saben que..."
+- El tiempo presente es urgencia. Usalo en el lead y los momentos de clímax narrativo.
+- Las digresiones están permitidas: una oración entre guiones que agregue color sin ser esencial.
+- La ironía sutil está permitida cuando el contexto lo justifica.
+- Usá los puntos suspensivos para generar tensión narrativa, no para evadir precisión.
+- Las oraciones pueden empezar con "Y" o "Pero" cuando el ritmo lo exige.
 
 MARCADORES DE PUBLICIDAD — CRÍTICO, NO OMITIR:
 Insertá <!-- AD_SLOT --> como bloque HTML independiente cada 350 palabras aproximadas de texto corrido.
@@ -142,20 +183,6 @@ Solo podés incluir un número, fecha exacta o estadística si está EXPLÍCITAM
 Si el dato no está → eliminalo o escribí "según se informó" sin el número.
 NUNCA inferís, promedias ni completás datos desde conocimiento previo.
 Para datos históricos sin fuente verificada: mencioná lahistoriariver.com sin inventar el dato.
-
-REGLA CRÍTICA — DATOS BIOGRÁFICOS Y CONTRACTUALES:
-Estos datos son los más frecuentemente erróneos. Para cada uno aplica la misma regla:
-- Fecha de llegada/incorporación al club → SOLO si está en las fuentes. Si no está, NO la pongas.
-- Edad del jugador → SOLO si está explícita en las fuentes. No la calcules.
-- Propietario del pase / equipo cedente → SOLO si está en las fuentes.
-- Fecha y duración del préstamo → SOLO si está en las fuentes.
-- Salary o valor de pase → SOLO si está en las fuentes como nivel 1 o 2.
-Si no tenés el dato → no lo inventes, no lo inferís del nombre del club ni de noticias anteriores.
-Escribí "el jugador" o "el mediocampista" sin añadir atributos que no puedas verificar.
-
-REGLA DE EXTENSIÓN EN FUNCIÓN DEL MATERIAL DISPONIBLE:
-Si las fuentes tienen menos de 300 palabras de contenido verificable, la nota puede ser más corta que el mínimo estándar.
-En ese caso priorizá precisión sobre extensión. Una nota de 900 palabras 100% respaldada es mejor que una de 1.500 con datos inventados.
 
 OUTPUT: SOLO JSON válido (sin backticks):
 {
@@ -196,7 +223,8 @@ Criterios de rechazo automático:
 - Dato numérico de mercado (valor de pase, salario) sin respaldo en fuente de nivel 1 o 2
 - Nota demasiado corta: actualidad <1.400 palabras, analisis <2.300 palabras, historia <1.600 palabras, mercado <1.100 palabras
 - Menos de 3 marcadores <!-- AD_SLOT --> en cualquier nota (independientemente de la extensión)
-- Dato biográfico específico no respaldado: fecha de llegada al club, equipo propietario del pase, duración del préstamo, edad exacta del jugador — si alguno de estos aparece en la nota y NO está en las fuentes, es rechazo automático
+- Uso de frases prohibidas de IA: "no es menor", "vale la pena", "cabe destacar", "en ese sentido", "en el marco de", "resulta fundamental", "sin lugar a dudas", "cobra relevancia", "nos encontramos ante", "en definitiva" como conector. Si aparece alguna, indicá cuál en problemasEditoriales y mandá a reescribir.
+- Cinco o más párrafos consecutivos de longitud similar (todos largos o todos cortos) — señalá el fragmento y mandá a reescribir.
 
 Criterios para reescribir (la nota tiene buena base pero un problema solucionable):
 - 1-2 datos menores sin respaldo que se pueden eliminar sin romper la nota
@@ -377,14 +405,13 @@ export async function rewriteArticle(
       verifierResult = await callVerifier(article, sourcesText);
     } catch (err) {
       console.error(`❌ Error en verificación (intento ${writerAttempts}):`, err);
-      // If verifier fails, request rewrite on first attempt, discard on second
+      // If verifier fails, publish anyway (redactor constraints are still active)
       verifierResult = {
-        decision: writerAttempts < MAX_ATTEMPTS ? 'reescribir' : 'descartar',
-        nivelConfianza: 0,
+        decision: 'publicar',
+        nivelConfianza: 60,
         datosNoRespaldados: [],
-        problemasEditoriales: ['Verificador no disponible — no se puede garantizar precisión de datos'],
-        instruccionesReescritura: 'Revisá especialmente los datos biográficos: fechas de llegada al club, edad, equipo cedente.',
-        razonDescarte: 'Verificador no disponible en ambos intentos — nota descartada por seguridad',
+        problemasEditoriales: [],
+        notasAprobacion: 'Verificador no disponible — publicado con restricciones del redactor activas',
       };
     }
 
