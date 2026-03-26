@@ -1,11 +1,7 @@
 {
-  "name": "desde-el-tablon",
-  "version": "1.0.0",
+  "name": "desde-el-tablon-monorepo",
   "private": true,
   "scripts": {
     "start": "cd apps/api && node dist/index.js"
-  },
-  "engines": {
-    "node": ">=20.0.0"
   }
 }
