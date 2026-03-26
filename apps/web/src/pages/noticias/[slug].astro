@@ -20,7 +20,7 @@ if (!article) {
   return Astro.redirect("/404");
 }
 
-const related = await getRelatedArticles(article.categoria, article.id, 3);
+const related = await getRelatedArticles(article.slug) ?? [];
 
 // ── AdSense config ─────────────────────────────────────────────────────────
 const ADSENSE_PUBLISHER = import.meta.env.PUBLIC_ADSENSE_PUBLISHER_ID;
