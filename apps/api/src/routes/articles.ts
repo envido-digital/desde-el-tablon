@@ -137,22 +137,41 @@ articlesRouter.get('/related/:slug', (req: Request, res: Response) => {
 
 // ── Admin routes ──────────────────────────────────────────────────────────────
 
-// GET /api/articles/admin/queue — now shows audit log (autonomous pipeline, no pending articles)
+// GET /api/articles/admin/queue — artículos pendientes de revisión manual
 articlesRouter.get('/admin/queue', requireAdmin, (_req: Request, res: Response) => {
-  // In autonomous mode, nothing is "pending". This endpoint returns recent discards for audit.
-  const discards = sqlite.prepare(`
-    SELECT * FROM pipeline_discards ORDER BY created_at DESC LIMIT 20
+  const articles = sqlite.prepare(`
+    SELECT id, titulo, bajada, slug, categoria, tags, sources,
+           created_at, requires_review, review_reason, importance_score
+    FROM articles WHERE status = 'pending'
+    ORDER BY importance_score DESC, created_at ASC
+    LIMIT 100
   `).all() as Array<Record<string, unknown>>;
 
-  res.json({
-    mode: 'autonomous',
-    pending: 0,
-    recentDiscards: discards.map(d => ({
-      ...d,
-      datosProblema: d.datos_problema ? JSON.parse(d.datos_problema as string) : [],
-      problemasEditoriales: d.problemas_editoriales ? JSON.parse(d.problemas_editoriales as string) : [],
-    })),
-  });
+  res.json(articles.map(a => {
+    let datosVerificables: Array<{ dato: string; fuente: string; verificado: boolean }> = [];
+    let datosFlag = 0;
+    if (a.sources) {
+      try {
+        const src = JSON.parse(a.sources as string);
+        datosVerificables = src.datosVerificables || [];
+        datosFlag = datosVerificables.filter((d: { verificado: boolean }) => !d.verificado).length;
+      } catch { /* ignore */ }
+    }
+    return {
+      id: a.id,
+      titulo: a.titulo,
+      bajada: a.bajada,
+      slug: a.slug,
+      categoria: a.categoria,
+      tags: a.tags ? JSON.parse(a.tags as string) : [],
+      created_at: a.created_at,
+      review_reason: a.review_reason,
+      importance_score: a.importance_score,
+      datosVerificables,
+      datosFlag,
+      alertLevel: datosFlag === 0 ? 'ok' : datosFlag <= 2 ? 'warn' : 'danger',
+    };
+  }));
 });
 
 // GET /api/articles/admin/queue_LEGACY — kept for manual override if needed
@@ -236,7 +255,7 @@ articlesRouter.post('/admin/generate', requireAdmin, async (req: Request, res: R
 articlesRouter.get('/admin/stats', requireAdmin, (_req: Request, res: Response) => {
   const stats = {
     published: (sqlite.prepare(`SELECT COUNT(*) as c FROM articles WHERE status = 'published'`).get() as { c: number }).c,
-    pending: 0, // Autonomous mode — nothing stays pending
+    pending: (sqlite.prepare(`SELECT COUNT(*) as c FROM articles WHERE status = 'pending'`).get() as { c: number }).c,
     discarded: (sqlite.prepare(`SELECT COUNT(*) as c FROM pipeline_discards`).get() as { c: number }).c,
     rejected: (sqlite.prepare(`SELECT COUNT(*) as c FROM articles WHERE status = 'rejected'`).get() as { c: number }).c,
     todayPublished: (sqlite.prepare(`SELECT COUNT(*) as c FROM articles WHERE status = 'published' AND date(published_at) = date('now')`).get() as { c: number }).c,
