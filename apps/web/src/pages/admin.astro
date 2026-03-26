@@ -85,7 +85,10 @@ import Header from '../components/Header.astro';
   }
 
   async function loadStats() {
-    const res = await fetch(`${API_BASE}/api/articles/admin/stats`);
+    const token = localStorage.getItem('dt-token') || '';
+    const res = await fetch(`${API_BASE}/api/articles/admin/stats`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     if (!res.ok) return;
     const data = await res.json();
     document.getElementById('stat-published')!.textContent = data.published.toLocaleString('es-AR');
@@ -95,7 +98,10 @@ import Header from '../components/Header.astro';
   }
 
   async function loadQueue() {
-    const res = await fetch(`${API_BASE}/api/articles/admin/queue`);
+    const token = localStorage.getItem('dt-token') || '';
+    const res = await fetch(`${API_BASE}/api/articles/admin/queue`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
     if (!res.ok) return;
     const articles = await res.json();
 
