@@ -6,7 +6,7 @@ import vercel from '@astrojs/vercel/serverless';
 
 export default defineConfig({
   site: 'https://desdeeltablon.com',
-  output: 'hybrid',
+  output: 'server',
   adapter: vercel(),
   integrations: [
     react(),
