@@ -79,7 +79,7 @@ articlesRouter.get('/slug/:slug', (req: Request, res: Response) => {
     // Deduplicate: one view per IP per article per day
     const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.socket.remoteAddress || 'unknown';
     const viewKey = createHash('sha256').update(`${ip}:${req.params.slug}:${new Date().toISOString().split('T')[0]}`).digest('hex');
-    const alreadyCounted = sqlite.prepare('SELECT user_id FROM article_reads WHERE user_id = ? AND article_id = ? AND date(read_at) = date("now")').get(viewKey, article.id as string);
+    const alreadyCounted = sqlite.prepare('SELECT user_id FROM article_reads WHERE user_id = ? AND article_id = ? AND date(read_at) = date(\'now\')').get(viewKey, article.id as string);
     if (!alreadyCounted) {
       sqlite.prepare('UPDATE articles SET views = views + 1 WHERE slug = ?').run(req.params.slug);
       // Record the view (reusing article_reads table with viewKey as pseudo user_id)
